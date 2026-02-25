@@ -560,6 +560,171 @@ The DAP engine uses a background daemon for persistent debug sessions:
 
 ---
 
+## Testing & Verification
+
+godot-flow에는 별도 테스트 프레임워크(jest, vitest 등)가 없습니다. 대신 **구조적 검증**과 **실행 기반 검증** 두 축으로 품질을 보장합니다.
+
+### 빌드 & 타입 검증
+
+모든 소스는 TypeScript strict 모드로 컴파일됩니다. `as any`, `@ts-ignore`, `@ts-expect-error` 같은 타입 우회가 전혀 없습니다.
+
+```bash
+# 타입 체크 (빌드 없이)
+npm run typecheck
+
+# 빌드
+npm run build
+```
+
+통과 기준: 에러 0건. 29개 소스 파일 전체가 strict 타입 체크를 통과해야 합니다.
+
+### 레지스트리 무결성 검증
+
+레지스트리에 등록된 110개 함수가 실제 GDScript(`godot_operations.gd`)와 일치하는지 확인하는 검증 스크립트가 포함되어 있습니다:
+
+```bash
+npx ts-node --esm scripts/validate-registry.ts
+```
+
+이 스크립트는 다음을 검증합니다:
+
+- **함수 필드 완결성**: 모든 함수에 `name`, `description`, `category`, `executionPath`, `inputSchema`가 빠짐없이 있는지
+- **이름 유일성**: 110개 함수 이름에 중복이 없는지
+- **카테고리 유효성**: 모든 함수의 `category`가 정의된 11개 카테고리(core, scene, node, resource, asset, runtime, lsp, dap, project, debug, misc) 중 하나인지
+- **실행 경로 유효성**: `executionPath`가 4개(headless, runtime, lsp, dap) 중 하나인지
+- **GDScript 교차 참조**: 레지스트리에 있는 headless 함수가 `godot_operations.gd`에도 존재하는지, 반대로 GDScript에만 있고 레지스트리에 없는 함수가 있는지 보고
+
+### MCP 서버 검증
+
+MCP 서버가 정확히 4개 메타-툴만 등록하고, JSON-RPC 프로토콜을 올바르게 구현하는지 확인합니다:
+
+```bash
+# MCP initialize 핸드셰이크 테스트
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}' | node dist/mcp/index.js
+
+# tools/list로 등록된 도구 확인
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1.0.0"}}}
+  {"jsonrpc":"2.0","method":"notifications/initialized"}
+  {"jsonrpc":"2.0","id":2,"method":"tools/list"}' | node dist/mcp/index.js
+```
+
+검증 포인트:
+- `tools/list` 응답에 정확히 4개 도구(`Godot.listfunc`, `Godot.findfunc`, `Godot.viewfunc`, `Godot.execute`)가 나오는지
+- 각 도구 응답에 `content`(사람이 읽는 텍스트)와 `structuredContent`(기계가 파싱하는 JSON) 두 필드가 모두 포함되는지
+- 잘못된 함수명으로 `execute`를 호출했을 때 `FUNCTION_NOT_FOUND` 에러 코드와 함께 유사 함수 제안이 반환되는지
+- 잘못된 인자 타입으로 호출했을 때 `VALIDATION_ERROR`가 Zod 검증 메시지와 함께 반환되는지
+
+### CLI 검증
+
+CLI가 4개 서브커맨드를 모두 올바르게 실행하는지 확인합니다:
+
+```bash
+# 전체 함수 목록 출력 — 110개가 나와야 함
+godot-flow listfunc
+
+# 카테고리 필터링 — dap 카테고리에 10개 함수
+godot-flow listfunc --category dap
+
+# 패턴 검색 — "break"로 검색하면 dap_set_breakpoint, dap_remove_breakpoint 포함
+godot-flow findfunc break
+
+# 함수 상세 조회 — inputSchema가 출력되어야 함
+godot-flow viewfunc create_scene
+
+# 실행 (Godot 프로젝트 경로 필요)
+GODOT_FLOW_PROJECT_PATH=/path/to/project godot-flow exec get_project_info
+```
+
+### 직접 실행해 볼 수 있는 시나리오
+
+Godot 프로젝트가 있다면, 아래 시나리오를 순서대로 실행해서 전체 파이프라인이 동작하는지 확인할 수 있습니다:
+
+**시나리오 1: 함수 탐색 → 조회 → 실행 (Headless)**
+```bash
+# 1. scene 관련 함수 찾기
+godot-flow findfunc scene --category scene
+
+# 2. create_scene의 인자 확인
+godot-flow viewfunc create_scene
+
+# 3. 씬 생성 실행
+godot-flow exec create_scene --args '{"scene_name": "TestEnemy", "root_type": "CharacterBody2D"}'
+
+# 4. 결과 확인: res://scenes/TestEnemy.tscn 파일이 생성됨
+```
+
+**시나리오 2: LSP 진단 (에디터 실행 필요)**
+```bash
+# Godot 에디터가 열려 있어야 LSP 포트 6005가 활성화됨
+godot-flow exec lsp_diagnostics --args '{"script_path": "res://scripts/player.gd"}'
+
+# 에러/경고 목록이 JSON으로 반환됨
+```
+
+**시나리오 3: 런타임 인스펙션 (게임 실행 필요)**
+```bash
+# 1. 프로젝트 실행
+godot-flow exec run_project
+
+# 2. 라이브 씬 트리 조회
+godot-flow exec inspect_runtime_tree
+
+# 3. 스크린샷 캡처
+godot-flow exec capture_screenshot
+
+# 4. 프로젝트 종료
+godot-flow exec stop_project
+```
+
+**시나리오 4: DAP 디버깅 (게임 실행 필요)**
+```bash
+# 1. 브레이크포인트 설정
+godot-flow exec dap_set_breakpoint --args '{"path": "res://scripts/player.gd", "line": 42}'
+
+# 2. 브레이크포인트에서 멈추면 스택 트레이스 확인
+godot-flow exec dap_get_stack_trace
+
+# 3. 변수 평가
+godot-flow exec dap_evaluate --args '{"expression": "player.position"}'
+
+# 4. 실행 계속
+godot-flow exec dap_continue
+```
+
+### 코드 품질 기준
+
+다음 기준을 모든 소스 파일에 적용합니다:
+
+| 기준 | 상태 |
+| --- | --- |
+| `as any` / `@ts-ignore` / `@ts-expect-error` 사용 | 0건 |
+| 의도 주석 없는 빈 catch 블록 | 0건 |
+| 프로덕션 코드의 `console.log` | 0건 |
+| 사용하지 않는 import | 0건 |
+| MCP `server.tool()` 호출 수 | 정확히 4개 |
+| 레지스트리 함수 수 | 정확히 110개 |
+| SKILL.md 줄 수 | 각 100줄 미만 |
+
+이 기준들은 grep 한 줄로 바로 검증할 수 있습니다:
+
+```bash
+# 타입 우회 확인
+grep -rn 'as any\|@ts-ignore\|@ts-expect-error' src/
+
+# 빈 catch 확인
+grep -rn 'catch' src/ --include='*.ts' | grep -v '//' | grep '{}'
+
+# console.log 확인
+grep -rn 'console\.log' src/ --include='*.ts'
+
+# server.tool() 횟수 확인
+grep -c 'server.tool(' src/mcp/server.ts
+
+# 레지스트리 함수 수 확인
+node -e "const m=require('./dist/registry/index');console.log(m.registry.count())"
+```
+---
+
 ## Troubleshooting
 
 | Problem | Solution |
