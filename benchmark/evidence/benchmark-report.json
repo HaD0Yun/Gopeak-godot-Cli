@@ -1,0 +1,209 @@
+{
+  "timestamp": "2026-02-25T13:08:52.447Z",
+  "method": "Actual MCP JSON-RPC tools/list response measurement via stdio",
+  "tokenEstimation": "chars / 4 (GPT-family approximation)",
+  "servers": {
+    "gopeakLegacy": {
+      "profile": "legacy (all tools)",
+      "toolCount": 110,
+      "toolsPayload": {
+        "bytes": 74431,
+        "chars": 74423,
+        "approxTokens": 18606
+      },
+      "fullResponse": {
+        "bytes": 74475,
+        "chars": 74467
+      },
+      "distribution": {
+        "count": 110,
+        "min": 152,
+        "max": 1941,
+        "mean": 676,
+        "median": 607,
+        "p90": 1116,
+        "total": 74312,
+        "top5": [
+          {
+            "name": "modify_script",
+            "chars": 1941
+          },
+          {
+            "name": "add_animation_track",
+            "chars": 1888
+          },
+          {
+            "name": "add_input_action",
+            "chars": 1573
+          },
+          {
+            "name": "create_tileset",
+            "chars": 1490
+          },
+          {
+            "name": "set_tilemap_cells",
+            "chars": 1462
+          }
+        ],
+        "bottom5": [
+          {
+            "name": "get_recording_mode",
+            "chars": 152
+          },
+          {
+            "name": "dap_step_over",
+            "chars": 160
+          },
+          {
+            "name": "dap_get_output",
+            "chars": 162
+          },
+          {
+            "name": "dap_continue",
+            "chars": 163
+          },
+          {
+            "name": "dap_pause",
+            "chars": 163
+          }
+        ]
+      }
+    },
+    "gopeakCompact": {
+      "profile": "compact (default)",
+      "toolCount": 21,
+      "toolsPayload": {
+        "bytes": 15362,
+        "chars": 15358,
+        "approxTokens": 3840
+      },
+      "fullResponse": {
+        "bytes": 15406,
+        "chars": 15402
+      },
+      "distribution": {
+        "count": 21,
+        "min": 192,
+        "max": 1974,
+        "mean": 730,
+        "median": 650,
+        "p90": 1311,
+        "total": 15336,
+        "top5": [
+          {
+            "name": "script.modify",
+            "chars": 1974
+          },
+          {
+            "name": "scene.node.add",
+            "chars": 1457
+          },
+          {
+            "name": "script.create",
+            "chars": 1311
+          },
+          {
+            "name": "project.search",
+            "chars": 1005
+          },
+          {
+            "name": "class.query",
+            "chars": 932
+          }
+        ],
+        "bottom5": [
+          {
+            "name": "dap.output",
+            "chars": 192
+          },
+          {
+            "name": "editor.status",
+            "chars": 296
+          },
+          {
+            "name": "editor.stop",
+            "chars": 373
+          },
+          {
+            "name": "lsp.diagnostics",
+            "chars": 410
+          },
+          {
+            "name": "runtime.status",
+            "chars": 426
+          }
+        ]
+      }
+    },
+    "godotFlow": {
+      "profile": "4 meta-tools",
+      "toolCount": 4,
+      "toolsPayload": {
+        "bytes": 1367,
+        "chars": 1367,
+        "approxTokens": 342
+      },
+      "fullResponse": {
+        "bytes": 1411,
+        "chars": 1411
+      },
+      "distribution": {
+        "count": 4,
+        "min": 296,
+        "max": 379,
+        "mean": 341,
+        "median": 344,
+        "p90": 372,
+        "total": 1362,
+        "top5": [
+          {
+            "name": "Godot.execute",
+            "chars": 379
+          },
+          {
+            "name": "Godot.findfunc",
+            "chars": 356
+          },
+          {
+            "name": "Godot.viewfunc",
+            "chars": 331
+          },
+          {
+            "name": "Godot.listfunc",
+            "chars": 296
+          }
+        ],
+        "bottom5": [
+          {
+            "name": "Godot.listfunc",
+            "chars": 296
+          },
+          {
+            "name": "Godot.viewfunc",
+            "chars": 331
+          },
+          {
+            "name": "Godot.findfunc",
+            "chars": 356
+          },
+          {
+            "name": "Godot.execute",
+            "chars": 379
+          }
+        ]
+      }
+    }
+  },
+  "reduction": {
+    "gopeakLegacyVsFlow": {
+      "charsX": 54.44,
+      "bytesX": 54.45,
+      "tokensX": 54.4
+    },
+    "gopeakCompactVsFlow": {
+      "charsX": 11.23,
+      "bytesX": 11.24,
+      "tokensX": 11.23
+    }
+  }
+}

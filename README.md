@@ -8,9 +8,9 @@
 [![](https://img.shields.io/github/stars/HaD0Yun/godot-flow 'Stars')](https://github.com/HaD0Yun/godot-flow/stargazers)
 [![](https://img.shields.io/badge/License-MIT-red.svg 'MIT License')](https://opensource.org/licenses/MIT)
 
-**110 Godot functions through 4 MCP meta-tools. ~200 tokens instead of ~15,000.**
+**110 Godot functions through 4 MCP meta-tools. 342 tokens instead of 18,606.** ([measured](benchmark/evidence/benchmark-report.json))
 
-`godot-flow` is a 3-layer architecture that lets AI assistants discover and execute Godot engine capabilities without loading massive tool schemas into context. Born from [GoPeak (godot-mcp)](https://github.com/HaD0Yun/godot-mcp), it compresses 110 individually-registered MCP tools into 4 meta-tools — a **63.86× token reduction**.
+`godot-flow` is a 3-layer architecture that lets AI assistants discover and execute Godot engine capabilities without loading massive tool schemas into context. Born from [GoPeak (godot-mcp)](https://github.com/HaD0Yun/godot-mcp), it compresses 110 individually-registered MCP tools into 4 meta-tools — a **54× token reduction** (measured via actual JSON-RPC `tools/list` responses).
 
 > **Successor to GoPeak**: Same 110 functions, same Godot integration depth, radically smaller context footprint.
 
@@ -20,19 +20,29 @@
 
 | Problem with traditional MCP | godot-flow Solution |
 |---|---|
-| 110 tool schemas loaded into every prompt (~15,000 tokens) | 4 meta-tool schemas (~200 tokens) |
+| 110 tool schemas loaded into every prompt (~18,600 tokens) | 4 meta-tool schemas (~342 tokens) |
 | AI context wasted on schema definitions | AI context focused on your actual task |
 | Adding tools means even more token overhead | Adding functions costs zero extra tokens |
 | Each tool is a separate registration | Functions are data in a searchable registry |
 
-### The 63× Token Savings
+### The 54× Token Savings (Measured)
+
+Measured by spawning both MCP servers and comparing actual `tools/list` JSON-RPC responses:
 
 ```
-Before (GoPeak):  110 tools × ~3,000 chars each = 328,952 chars in context
-After (godot-flow): 4 meta-tools × ~1,300 chars each = 5,151 chars in context
+Server               Tools    Chars        Tokens~
+──────────────────────────────────────────────────────
+GoPeak (legacy)      110      74,423       18,606
+GoPeak (compact)     21       15,358       3,840
+godot-flow           4        1,367        342
 
-Reduction: 63.86×
+Reduction: GoPeak legacy → godot-flow = 54.44× fewer chars
+           GoPeak compact → godot-flow = 11.23× fewer chars
 ```
+
+Token estimate: `chars ÷ 4` (GPT-family approximation).
+Reproduce: `npx tsx scripts/benchmark-tokens.ts`
+Evidence: [`benchmark/evidence/benchmark-report.json`](benchmark/evidence/benchmark-report.json)
 
 The AI discovers functions on-demand via `listfunc`/`findfunc`/`viewfunc`, then executes with `execute`. No upfront schema loading.
 
@@ -499,9 +509,9 @@ and show the stack trace when hit."
 
 | | GoPeak | godot-flow |
 |---|---|---|
-| **Architecture** | 97+ individual MCP tools | 4 meta-tools + function registry |
-| **Context cost** | ~15,000 tokens per session | ~200 tokens per session |
-| **Function count** | 97 → 110 | 110 |
+| **Architecture** | 110 individual MCP tools | 4 meta-tools + function registry |
+| **Context cost** | ~18,600 tokens per session (measured) | ~342 tokens per session (measured) |
+| **Function count** | 110 | 110 |
 | **Execution engines** | 4 (headless, runtime, LSP, DAP) | 4 (same engines, cleaner routing) |
 | **Input validation** | Per-tool Zod schemas | Dynamic Zod from registry schemas |
 | **Adding functions** | New `server.tool()` + schema | Add entry to registry data file |
