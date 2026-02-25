@@ -1,0 +1,43 @@
+{
+  "name": "godot-flow",
+  "version": "1.0.0",
+  "description": "3-layer Godot engine integration: 107 functions via 4 MCP meta-tools",
+  "type": "module",
+  "main": "dist/mcp/index.js",
+  "bin": {
+    "godot-flow": "dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "skills/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "godot",
+    "mcp",
+    "game-engine",
+    "ai",
+    "model-context-protocol"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.0",
+    "axios": "^1.7.9",
+    "commander": "^12.1.0",
+    "fs-extra": "^11.2.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  },
+  "license": "MIT"
+}
