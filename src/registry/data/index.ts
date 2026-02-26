@@ -11,6 +11,11 @@ export { dapTools } from './dap.js';
 export { projectTools } from './project.js';
 export { debugTools } from './debug.js';
 export { miscTools } from './misc.js';
+export { renderingTools } from './rendering.js';
+export { physicsTools } from './physics.js';
+export { networkingTools } from './networking.js';
+export { audioTools } from './audio.js';
+export { themeTools } from './theme.js';
 
 import { coreTools } from './core.js';
 import { sceneTools } from './scene.js';
@@ -23,6 +28,11 @@ import { dapTools } from './dap.js';
 import { projectTools } from './project.js';
 import { debugTools } from './debug.js';
 import { miscTools } from './misc.js';
+import { renderingTools } from './rendering.js';
+import { physicsTools } from './physics.js';
+import { networkingTools } from './networking.js';
+import { audioTools } from './audio.js';
+import { themeTools } from './theme.js';
 
 export const allTools: FunctionDefinition[] = [
   ...coreTools,
@@ -36,4 +46,9 @@ export const allTools: FunctionDefinition[] = [
   ...projectTools,
   ...debugTools,
   ...miscTools,
+  ...renderingTools,
+  ...physicsTools,
+  ...networkingTools,
+  ...audioTools,
+  ...themeTools,
 ];

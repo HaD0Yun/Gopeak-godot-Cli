@@ -8,11 +8,11 @@
 [![](https://img.shields.io/github/stars/HaD0Yun/godot-flow 'Stars')](https://github.com/HaD0Yun/godot-flow/stargazers)
 [![](https://img.shields.io/badge/License-MIT-red.svg 'MIT License')](https://opensource.org/licenses/MIT)
 
-**110 Godot functions through 4 MCP meta-tools. 342 tokens instead of 18,606.** ([measured](benchmark/evidence/benchmark-report.json))
+**128 Godot functions through 4 MCP meta-tools. 342 tokens instead of 18,606.** ([measured](benchmark/evidence/benchmark-report.json))
 
-`godot-flow` is a 3-layer architecture that lets AI assistants discover and execute Godot engine capabilities without loading massive tool schemas into context. Born from [GoPeak (godot-mcp)](https://github.com/HaD0Yun/godot-mcp), it compresses 110 individually-registered MCP tools into 4 meta-tools — a **54× token reduction** (measured via actual JSON-RPC `tools/list` responses).
+`godot-flow` is a 3-layer architecture that lets AI assistants discover and execute Godot engine capabilities without loading massive tool schemas into context. Born from [GoPeak (godot-mcp)](https://github.com/HaD0Yun/godot-mcp), it compresses 128 individually-registered MCP tools into 4 meta-tools — a **54× token reduction** (measured via actual JSON-RPC `tools/list` responses). Adding functions costs zero extra tokens.
 
-> **Successor to GoPeak**: Same 110 functions, same Godot integration depth, radically smaller context footprint.
+> **Successor to GoPeak**: 128 functions (18 more than GoPeak's 110), same Godot integration depth, radically smaller context footprint.
 
 ---
 
@@ -20,7 +20,7 @@
 
 | Problem with traditional MCP | godot-flow Solution |
 |---|---|
-| 110 tool schemas loaded into every prompt (~18,600 tokens) | 4 meta-tool schemas (~342 tokens) |
+| 110+ tool schemas loaded into every prompt (~18,600 tokens) | 4 meta-tool schemas (~342 tokens) |
 | AI context wasted on schema definitions | AI context focused on your actual task |
 | Adding tools means even more token overhead | Adding functions costs zero extra tokens |
 | Each tool is a separate registration | Functions are data in a searchable registry |
@@ -67,14 +67,14 @@ The AI discovers functions on-demand via `listfunc`/`findfunc`/`viewfunc`, then 
 │  │  → Zod validates input against schema      │  │
 │  │  → Routes by executionPath                 │  │
 │  └────────────────────────────────────────────┘  │
-│  Function Registry: 110 functions, 11 categories │
+│  Function Registry: 128 functions, 17 categories │
 └─────────────────┬───────────────────────────────┘
                   │
 ┌─────────────────▼───────────────────────────────┐
 │  Layer 3: Execution Engines                     │
 │  ┌──────────┐ ┌─────────┐ ┌─────┐ ┌─────┐      │
 │  │ Headless │ │ Runtime │ │ LSP │ │ DAP │      │
-│  │ (81 fn)  │ │ (15 fn) │ │(4fn)│ │(10fn)│     │
+│  │ (99 fn) │ │ (15 fn) │ │(4fn)│ │(10fn)│     │
 │  └──────────┘ └─────────┘ └─────┘ └─────┘      │
 │  → Godot CLI / TCP:7777 / LSP:6005 / DAP:6006  │
 └─────────────────────────────────────────────────┘
@@ -84,7 +84,7 @@ The AI discovers functions on-demand via `listfunc`/`findfunc`/`viewfunc`, then 
 
 | Engine | Port | Functions | How It Works |
 |--------|------|-----------|--------------|
-| **Headless** | — | 81 | Spawns `godot --headless --script` for each operation |
+| **Headless** | — | 99 | Spawns `godot --headless --script` for each operation |
 | **Runtime** | TCP 7777 | 15 | Connects to running Godot game via runtime addon |
 | **LSP** | 6005 | 4 | Communicates with Godot's built-in Language Server |
 | **DAP** | 6006 | 10 | Manages Debug Adapter Protocol sessions with background daemon |
@@ -285,7 +285,7 @@ Skills teach the AI the **discover → inspect → execute** pattern:
 
 ---
 
-## Function Reference (110 functions)
+## Function Reference (128 functions, 17 categories)
 
 ### Core (3)
 
@@ -315,7 +315,7 @@ Skills teach the AI the **discover → inspect → execute** pattern:
 | `create_tileset` | Creates a TileSet from texture atlases |
 | `set_tilemap_cells` | Places tiles in a TileMap node |
 
-### Animation (5)
+### Animation (6)
 
 | Function | Description |
 |----------|-------------|
@@ -324,7 +324,7 @@ Skills teach the AI the **discover → inspect → execute** pattern:
 | `create_animation_tree` | Creates an AnimationTree linked to an AnimationPlayer |
 | `add_animation_state` | Adds a state to an AnimationTree state machine |
 | `connect_animation_states` | Connects two states with a transition |
-
+| `set_animation_tree_parameter` | Sets a parameter on an AnimationTree node |
 ### Navigation (2)
 
 | Function | Description |
@@ -332,7 +332,7 @@ Skills teach the AI the **discover → inspect → execute** pattern:
 | `create_navigation_agent` | Creates a NavigationAgent for AI pathfinding |
 | `create_navigation_region` | Creates a NavigationRegion for walkable areas |
 
-### Resource (20)
+### Resource (22)
 
 | Function | Description |
 |----------|-------------|
@@ -356,7 +356,8 @@ Skills teach the AI the **discover → inspect → execute** pattern:
 | `get_import_status` | Returns import status for project resources |
 | `get_uid` | Gets UID for a file (Godot 4.4+) |
 | `update_project_uids` | Updates UID references in project (Godot 4.4+) |
-
+| `export_mesh_library` | Exports MeshInstance3D nodes as a MeshLibrary resource |
+| `resave_resources` | Resaves all scene/resource files to update UID references |
 ### Asset (3)
 
 | Function | Description |
@@ -457,6 +458,45 @@ Skills teach the AI the **discover → inspect → execute** pattern:
 | `get_recording_mode` | Get current recording mode status |
 | `set_recording_mode` | Set recording mode (lite/full) |
 
+### Rendering (4)
+
+| Function | Description |
+|----------|-------------|
+| `create_environment` | Creates an Environment resource for 3D rendering settings |
+| `create_world_environment` | Creates a WorldEnvironment node in a scene |
+| `create_light` | Creates a light node (Directional, Omni, Spot, 2D) |
+| `create_camera` | Creates a Camera2D or Camera3D node |
+
+### Physics (5)
+
+| Function | Description |
+|----------|-------------|
+| `configure_physics_layer` | Configures physics layer names in ProjectSettings |
+| `create_physics_material` | Creates a PhysicsMaterial resource |
+| `create_raycast` | Creates a RayCast2D or RayCast3D node |
+| `set_collision_layer_mask` | Sets collision layer and mask on a physics node |
+| `configure_navigation_layers` | Configures navigation layer names in ProjectSettings |
+
+### Networking (3)
+
+| Function | Description |
+|----------|-------------|
+| `create_http_request` | Creates an HTTPRequest node for web communication |
+| `create_multiplayer_spawner` | Creates a MultiplayerSpawner for networked spawning |
+| `create_multiplayer_synchronizer` | Creates a MultiplayerSynchronizer for property replication |
+
+### Audio (1)
+
+| Function | Description |
+|----------|-------------|
+| `create_audio_stream_player` | Creates an AudioStreamPlayer node (non-positional, 2D, or 3D) |
+
+### Theme (2)
+
+| Function | Description |
+|----------|-------------|
+| `create_theme` | Creates a Theme resource for UI styling |
+| `apply_theme_to_node` | Applies a Theme resource to a Control node |
 ---
 
 ## Prompt Examples
@@ -511,7 +551,7 @@ and show the stack trace when hit."
 |---|---|---|
 | **Architecture** | 110 individual MCP tools | 4 meta-tools + function registry |
 | **Context cost** | ~18,600 tokens per session (measured) | ~342 tokens per session (measured) |
-| **Function count** | 110 | 110 |
+| **Function count** | 110 | 128 |
 | **Execution engines** | 4 (headless, runtime, LSP, DAP) | 4 (same engines, cleaner routing) |
 | **Input validation** | Per-tool Zod schemas | Dynamic Zod from registry schemas |
 | **Adding functions** | New `server.tool()` + schema | Add entry to registry data file |
@@ -590,7 +630,7 @@ npm run build
 
 ### 레지스트리 무결성 검증
 
-레지스트리에 등록된 110개 함수가 실제 GDScript(`godot_operations.gd`)와 일치하는지 확인하는 검증 스크립트가 포함되어 있습니다:
+레지스트리에 등록된 128개 함수가 실제 GDScript(`godot_operations.gd`)와 일치하는지 확인하는 검증 스크립트가 포함되어 있습니다:
 
 ```bash
 npx ts-node --esm scripts/validate-registry.ts
@@ -600,7 +640,7 @@ npx ts-node --esm scripts/validate-registry.ts
 
 - **함수 필드 완결성**: 모든 함수에 `name`, `description`, `category`, `executionPath`, `inputSchema`가 빠짐없이 있는지
 - **이름 유일성**: 110개 함수 이름에 중복이 없는지
-- **카테고리 유효성**: 모든 함수의 `category`가 정의된 11개 카테고리(core, scene, node, resource, asset, runtime, lsp, dap, project, debug, misc) 중 하나인지
+- **카테고리 유효성**: 모든 함수의 `category`가 정의된 17개 카테고리(core, scene, node, resource, asset, runtime, lsp, dap, project, debug, misc, rendering, physics, networking, audio, animation, theme) 중 하나인지
 - **실행 경로 유효성**: `executionPath`가 4개(headless, runtime, lsp, dap) 중 하나인지
 - **GDScript 교차 참조**: 레지스트리에 있는 headless 함수가 `godot_operations.gd`에도 존재하는지, 반대로 GDScript에만 있고 레지스트리에 없는 함수가 있는지 보고
 
@@ -712,7 +752,7 @@ godot-flow exec dap_continue
 | 프로덕션 코드의 `console.log` | 0건 |
 | 사용하지 않는 import | 0건 |
 | MCP `server.tool()` 호출 수 | 정확히 4개 |
-| 레지스트리 함수 수 | 정확히 110개 |
+| 레지스트리 함수 수 | 정확히 128개 |
 | SKILL.md 줄 수 | 각 100줄 미만 |
 
 이 기준들은 grep 한 줄로 바로 검증할 수 있습니다:
@@ -759,7 +799,7 @@ godot-flow/
 │   │   └── index.ts           # StdioServerTransport entry point
 │   ├── registry/
 │   │   ├── index.ts           # FunctionRegistry class (list, search, get)
-│   │   └── data/              # 12 category files with function definitions
+│   │   └── data/              # 17 category files with function definitions
 │   │       ├── core.ts
 │   │       ├── scene.ts
 │   │       ├── node.ts
@@ -771,7 +811,12 @@ godot-flow/
 │   │       ├── project.ts
 │   │       ├── debug.ts
 │   │       ├── misc.ts
-│   │       └── priority1.ts
+│   │       ├── rendering.ts
+│   │       ├── physics.ts
+│   │       ├── networking.ts
+│   │       ├── audio.ts
+│   │       ├── theme.ts
+│   │       └── index.ts
 │   ├── engine/
 │   │   ├── headless.ts        # Godot --headless execution
 │   │   ├── runtime.ts         # TCP:7777 runtime bridge

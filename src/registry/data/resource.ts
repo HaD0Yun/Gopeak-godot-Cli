@@ -703,5 +703,62 @@ export const resourceTools: FunctionDefinition[] = [
     },
     category: FunctionCategory.Resource,
     executionPath: "headless",
+  },
+  {
+    name: "export_mesh_library",
+    description: "Exports a scene's MeshInstance3D nodes as a MeshLibrary resource (.tres). Use to create reusable mesh collections for GridMap-based level design. Can export all meshes or specific named items.",
+    inputSchema: {
+        "type": "object",
+        "properties": {
+            "projectPath": {
+                "type": "string",
+                "description": "Absolute path to project directory containing project.godot. Use the same path across all tool calls in a workflow."
+            },
+            "scenePath": {
+                "type": "string",
+                "description": "Path to source scene containing MeshInstance3D nodes (e.g., \"scenes/meshes.tscn\")"
+            },
+            "outputPath": {
+                "type": "string",
+                "description": "Path for output MeshLibrary .tres file (e.g., \"resources/tile_meshes.tres\")"
+            },
+            "meshItemNames": {
+                "type": "array",
+                "description": "Optional: specific node names to export. If empty, exports all MeshInstance3D children.",
+                "items": {
+                    "type": "string"
+                }
+            }
+        },
+        "required": [
+            "projectPath",
+            "scenePath",
+            "outputPath"
+        ]
+    },
+    category: FunctionCategory.Resource,
+    executionPath: "headless",
+  },
+  {
+    name: "resave_resources",
+    description: "Resaves all scene (.tscn) and resource (.tres) files in a project to update UID references and fix broken links. Use after large refactors, file moves, or Godot version upgrades.",
+    inputSchema: {
+        "type": "object",
+        "properties": {
+            "projectPath": {
+                "type": "string",
+                "description": "Absolute path to project directory containing project.godot. Use the same path across all tool calls in a workflow."
+            },
+            "targetPath": {
+                "type": "string",
+                "description": "Optional: subdirectory path relative to project to scope the resave (default: entire project \"res://\")"
+            }
+        },
+        "required": [
+            "projectPath"
+        ]
+    },
+    category: FunctionCategory.Resource,
+    executionPath: "headless",
   }
 ];

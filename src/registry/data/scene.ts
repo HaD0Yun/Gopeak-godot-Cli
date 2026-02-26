@@ -746,5 +746,41 @@ export const sceneTools: FunctionDefinition[] = [
     },
     category: FunctionCategory.Scene,
     executionPath: "headless",
+  },
+  {
+    name: "set_animation_tree_parameter",
+    description: "Sets a parameter on an AnimationTree node. Use to control blend amounts, transition conditions, or any AnimationTree parameter at edit time. The parameter is saved with the scene.",
+    inputSchema: {
+        "type": "object",
+        "properties": {
+            "projectPath": {
+                "type": "string",
+                "description": "Absolute path to project directory containing project.godot. Use the same path across all tool calls in a workflow."
+            },
+            "scenePath": {
+                "type": "string",
+                "description": "Path to scene file relative to project"
+            },
+            "animTreePath": {
+                "type": "string",
+                "description": "Path to AnimationTree node in the scene"
+            },
+            "parameterPath": {
+                "type": "string",
+                "description": "Parameter path within the AnimationTree (e.g., \"parameters/blend_amount\", \"parameters/conditions/is_moving\")"
+            },
+            "value": {
+                "description": "Value to set for the parameter (number, boolean, or string depending on parameter type)"
+            }
+        },
+        "required": [
+            "projectPath",
+            "scenePath",
+            "animTreePath",
+            "parameterPath"
+        ]
+    },
+    category: FunctionCategory.Animation,
+    executionPath: "headless",
   }
 ];

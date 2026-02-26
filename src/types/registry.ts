@@ -10,6 +10,12 @@ export enum FunctionCategory {
   Project = 'project',
   Debug = 'debug',
   Misc = 'misc',
+  Rendering = 'rendering',
+  Physics = 'physics',
+  Networking = 'networking',
+  Audio = 'audio',
+  Animation = 'animation',
+  Theme = 'theme',
 }
 
 export interface RegistrySearchResult {
