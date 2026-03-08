@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { GodotFlowError } from './errors.js';
 
 export interface CliConfigOverrides {
@@ -54,9 +56,10 @@ function parseTimeout(value: string | undefined, fallback: number): number {
 
 export function loadConfig(cliOverrides: CliConfigOverrides = {}): AppConfig {
   const env = process.env;
+  const cwdProjectPath = existsSync(resolve(process.cwd(), 'project.godot')) ? process.cwd() : undefined;
 
   return {
-    projectPath: cliOverrides.projectPath ?? env.GODOT_FLOW_PROJECT_PATH,
+    projectPath: cliOverrides.projectPath ?? env.GODOT_FLOW_PROJECT_PATH ?? cwdProjectPath,
     godotPath: cliOverrides.godotPath ?? env.GODOT_FLOW_GODOT_PATH ?? DEFAULTS.godotPath,
     runtimePort:
       cliOverrides.runtimePort ??

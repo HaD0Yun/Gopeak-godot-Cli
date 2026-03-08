@@ -1,11 +1,11 @@
 {
-  "name": "godot-flow",
+  "name": "gopeak-cli",
   "version": "1.0.0",
-  "description": "3-layer Godot engine integration: 107 functions via 4 MCP meta-tools",
+  "description": "CLI-first Godot automation with optional MCP integration via 4 meta-tools",
   "type": "module",
   "main": "dist/mcp/index.js",
   "bin": {
-    "godot-flow": "dist/cli.js"
+    "gopeak-cli": "dist/cli.js"
   },
   "files": [
     "dist/",
@@ -16,10 +16,15 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build",
+    "postinstall": "node -e \"try{require('child_process').execFileSync(process.execPath,['dist/cli.js','setup','--silent'],{stdio:'ignore'})}catch{}\"",
+    "prepack": "npm run build",
+    "test": "node dist/daemon/request-loop.test.js"
   },
   "keywords": [
     "godot",
+    "cli",
     "mcp",
     "game-engine",
     "ai",

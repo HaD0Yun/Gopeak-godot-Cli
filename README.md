@@ -1022,3 +1022,17 @@ MIT — see [LICENSE](LICENSE).
 - Original MCP server by [Coding-Solo](https://github.com/Coding-Solo/godot-mcp)
 - GoPeak enhancements by [HaD0Yun](https://github.com/HaD0Yun)
 - godot-flow architecture by [HaD0Yun](https://github.com/HaD0Yun)
+
+## Shell helper commands
+
+`gopeak-cli` can now install shell hooks that detect supported AI CLI commands already present on your machine and wrap them with cached update + GitHub star prompts.
+
+Supported command detection at setup time: `claude`, `claudecode`, `codex`, `gemini`, `copilot`, `opencode`, `omx`.
+
+```bash
+gopeak-cli setup
+gopeak-cli check
+gopeak-cli notify
+gopeak-cli star
+gopeak-cli uninstall
+```

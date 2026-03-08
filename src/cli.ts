@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
-import { cp, mkdir } from 'node:fs/promises';
+import { access, cp, mkdir, readFile } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import { Command } from 'commander';
 import { registry } from './registry/index.js';
 import { executeHeadless } from './engine/headless.js';
@@ -10,13 +12,26 @@ import { executeRuntime } from './engine/runtime.js';
 import { executeLSP } from './engine/lsp.js';
 import { executeDAP } from './engine/dap.js';
 import { startDaemon, stopDaemon, getDaemonStatus } from './daemon/dap-daemon.js';
-import { loadConfig } from './config.js';
+import { checkForUpdates } from './cli/check.js';
+import { showNotification } from './cli/notify.js';
+import { setupShellHooks } from './cli/setup.js';
+import { starGodotFlow } from './cli/star.js';
+import { uninstallHooks } from './cli/uninstall.js';
+import { getLocalVersion } from './cli/utils.js';
+import { CONFIG_ENV_KEYS, loadConfig } from './config.js';
 import { GodotFlowError } from './errors.js';
 import type { ExecutionResult } from './types/engine.js';
 import type { FunctionDefinition } from './types/function.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+process.stdout.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EPIPE') {
+    process.exit(0);
+  }
+  throw error;
+});
 
 interface GlobalOptions {
   format?: string;
@@ -28,6 +43,22 @@ interface CliContext {
   format: 'json' | 'text';
   timeoutMs?: number;
   projectPath?: string;
+}
+
+interface DoctorCheck {
+  name: string;
+  status: 'pass' | 'warn' | 'fail';
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+interface DoctorReport {
+  summary: {
+    passed: number;
+    warned: number;
+    failed: number;
+  };
+  checks: DoctorCheck[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -156,24 +187,33 @@ function outputError(command: Command | undefined, error: unknown): void {
   }
 }
 
-function parseExecArgs(rawArgs?: string): Record<string, unknown> {
-  if (!rawArgs) {
+async function parseExecArgs(rawArgs?: string, argsFile?: string): Promise<Record<string, unknown>> {
+  if (rawArgs && argsFile) {
+    throw new GodotFlowError('INVALID_ARGS', 'Use either --args or --args-file, not both at once');
+  }
+
+  let payload = rawArgs;
+  if (argsFile) {
+    payload = await readFile(argsFile, 'utf8');
+  }
+
+  if (!payload) {
     return {};
   }
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(rawArgs);
+    parsed = JSON.parse(payload);
   } catch (error) {
     throw new GodotFlowError('INVALID_ARGS', 'Failed to parse --args as JSON', {
-      args: rawArgs,
+      args: payload,
       reason: error instanceof Error ? error.message : String(error),
     });
   }
 
   if (!isRecord(parsed)) {
     throw new GodotFlowError('INVALID_ARGS', 'The --args payload must be a JSON object', {
-      args: rawArgs,
+      args: payload,
     });
   }
 
@@ -190,14 +230,137 @@ function resolveFunctionOrThrow(name: string): FunctionDefinition {
   return definition;
 }
 
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await access(path, constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function checkCommandAvailability(command: string): { ok: boolean; output: string } {
+  const result = spawnSync(command, ['--version'], {
+    encoding: 'utf8',
+    shell: false,
+  });
+
+  if (result.status === 0) {
+    return {
+      ok: true,
+      output: (result.stdout || result.stderr || '').trim(),
+    };
+  }
+
+  return {
+    ok: false,
+    output: (result.stderr || result.stdout || '').trim(),
+  };
+}
+
+async function createDoctorReport(command: Command): Promise<DoctorReport> {
+  const context = parseContext(command);
+  const config = loadConfig({
+    projectPath: context.projectPath,
+    timeoutMs: context.timeoutMs,
+  });
+
+  const checks: DoctorCheck[] = [];
+
+  const nodeMajor = Number.parseInt(process.versions.node.split('.')[0] ?? '0', 10);
+  checks.push({
+    name: 'node',
+    status: nodeMajor >= 18 ? 'pass' : 'fail',
+    message: nodeMajor >= 18 ? `Node.js ${process.versions.node}` : `Node.js ${process.versions.node} (requires >=18)`,
+    details: { version: process.versions.node },
+  });
+
+  const godotCheck = checkCommandAvailability(config.godotPath);
+  checks.push({
+    name: 'godot',
+    status: godotCheck.ok ? 'pass' : 'warn',
+    message: godotCheck.ok
+      ? `Godot executable available: ${config.godotPath}`
+      : `Godot executable not found or not runnable: ${config.godotPath}`,
+    details: { configuredPath: config.godotPath, output: godotCheck.output },
+  });
+
+  if (config.projectPath) {
+    const projectExists = await pathExists(config.projectPath);
+    const projectFileExists = projectExists && await pathExists(resolve(config.projectPath, 'project.godot'));
+    checks.push({
+      name: 'projectPath',
+      status: projectFileExists ? 'pass' : 'warn',
+      message: projectFileExists
+        ? `Godot project detected: ${config.projectPath}`
+        : `Project path is missing or does not contain project.godot: ${config.projectPath}`,
+      details: { projectPath: config.projectPath },
+    });
+  } else {
+    checks.push({
+      name: 'projectPath',
+      status: 'warn',
+      message: `No project path configured. Set ${CONFIG_ENV_KEYS.projectPath} or pass --project-path.`,
+      details: { envKey: CONFIG_ENV_KEYS.projectPath },
+    });
+  }
+
+  const codexSkillTarget = resolve(process.cwd(), '.codex/skills/gopeak-cli/SKILL.md');
+  const claudeSkillTarget = resolve(process.cwd(), '.claude/skills/gopeak-cli/SKILL.md');
+  const opencodeSkillTarget = resolve(process.cwd(), 'SKILL.md');
+
+  checks.push({
+    name: 'skills',
+    status: (await pathExists(codexSkillTarget)) || (await pathExists(claudeSkillTarget)) || (await pathExists(opencodeSkillTarget))
+      ? 'pass'
+      : 'warn',
+    message: 'AI skill files are optional but recommended for assistant integration.',
+    details: {
+      codex: codexSkillTarget,
+      claude: claudeSkillTarget,
+      opencode: opencodeSkillTarget,
+    },
+  });
+
+  const passed = checks.filter((check) => check.status === 'pass').length;
+  const warned = checks.filter((check) => check.status === 'warn').length;
+  const failed = checks.filter((check) => check.status === 'fail').length;
+
+  return {
+    summary: { passed, warned, failed },
+    checks,
+  };
+}
+
+function createConfigView(command: Command): Record<string, unknown> {
+  const context = parseContext(command);
+  const config = loadConfig({
+    projectPath: context.projectPath,
+    timeoutMs: context.timeoutMs,
+  });
+
+  return {
+    config,
+    envKeys: CONFIG_ENV_KEYS,
+    hints: {
+      quickstart: [
+        'gopeak-cli doctor --format text',
+        'gopeak-cli listfunc --category scene --format text',
+        'gopeak-cli findfunc project --format text',
+      ],
+    },
+  };
+}
+
 async function routeExecution(
   definition: FunctionDefinition,
   args: Record<string, unknown>,
   command: Command,
 ): Promise<ExecutionResult> {
   const context = parseContext(command);
+  const argProjectPath = typeof args.projectPath === 'string' ? args.projectPath : undefined;
   const config = loadConfig({
-    projectPath: context.projectPath,
+    projectPath: context.projectPath ?? argProjectPath,
     timeoutMs: context.timeoutMs,
   });
 
@@ -247,10 +410,10 @@ async function copySkill(platform: string): Promise<{ platform: string; source: 
     target = resolve(process.cwd(), 'SKILL.md');
   } else if (normalizedPlatform === 'claude' || normalizedPlatform === 'claudecode') {
     source = resolve(__dirname, '../skills/claude/SKILL.md');
-    target = resolve(process.cwd(), '.claude/skills/godot-flow/SKILL.md');
+    target = resolve(process.cwd(), '.claude/skills/gopeak-cli/SKILL.md');
   } else if (normalizedPlatform === 'codex') {
     source = resolve(__dirname, '../skills/codex/SKILL.md');
-    target = resolve(process.cwd(), '.codex/skills/godot-flow/SKILL.md');
+    target = resolve(process.cwd(), '.codex/skills/gopeak-cli/SKILL.md');
   } else {
     throw new GodotFlowError('INVALID_ARGS', `Unsupported platform: ${platform}`, {
       allowed: ['opencode', 'claude', 'claudecode', 'codex'],
@@ -280,12 +443,26 @@ async function withHandling(command: Command, action: () => Promise<unknown>): P
 const program = new Command();
 
 program
-  .name('godot-flow')
+  .name('gopeak-cli')
   .version('1.0.0')
-  .description('Godot Flow CLI')
+  .description('CLI-first Godot automation for humans and AI agents')
   .option('--format <type>', 'Output format (json|text)', 'json')
   .option('--timeout <ms>', 'Timeout in ms')
   .option('--project-path <path>', 'Godot project path');
+
+program
+  .command('doctor')
+  .description('Check whether your CLI environment is ready to use')
+  .action(async function doctorAction(this: Command) {
+    await withHandling(this, async () => createDoctorReport(this));
+  });
+
+program
+  .command('config')
+  .description('Show resolved configuration and related environment keys')
+  .action(async function configAction(this: Command) {
+    await withHandling(this, async () => createConfigView(this));
+  });
 
 program
   .command('listfunc')
@@ -320,10 +497,11 @@ program
   .command('exec <name>')
   .description('Execute a function')
   .option('--args <json>', 'JSON args')
-  .action(async function execAction(this: Command, name: string, options: { args?: string }) {
+  .option('--args-file <path>', 'Read JSON args from a file')
+  .action(async function execAction(this: Command, name: string, options: { args?: string; argsFile?: string }) {
     await withHandling(this, async () => {
       const definition = resolveFunctionOrThrow(name);
-      const args = parseExecArgs(options.args);
+      const args = await parseExecArgs(options.args, options.argsFile);
       const result = await routeExecution(definition, args, this);
 
       if (!result.success) {
@@ -392,9 +570,73 @@ daemon
   });
 
 program
-  .command('setup <platform>')
-  .description('Setup SKILL.md integration')
-  .action(async function setupAction(this: Command, platform: string) {
+  .command('setup [platform]')
+  .description('Install shell hooks or AI-platform SKILL.md integration')
+  .option('--silent', 'Suppress shell setup logs')
+  .action(async function setupAction(this: Command, platform?: string, options?: { silent?: boolean }) {
+    await withHandling(this, async () => {
+      const normalizedPlatform = platform?.trim().toLowerCase();
+      if (!normalizedPlatform || normalizedPlatform === 'shell' || normalizedPlatform === 'hooks') {
+        await setupShellHooks(options?.silent ? ['--silent'] : []);
+        return { ok: true, mode: 'shell-hooks' };
+      }
+
+      return copySkill(normalizedPlatform);
+    });
+  });
+
+program
+  .command('check')
+  .description('Check whether a newer gopeak-cli version is available')
+  .allowUnknownOption(true)
+  .action(async function checkAction(this: Command) {
+    await withHandling(this, async () => {
+      await checkForUpdates(process.argv.slice(3));
+      return { ok: true };
+    });
+  });
+
+program
+  .command('notify')
+  .description('Show interactive update/star notifications used by shell hooks')
+  .action(async function notifyAction(this: Command) {
+    await withHandling(this, async () => {
+      await showNotification();
+      return { ok: true };
+    });
+  });
+
+program
+  .command('star')
+  .description('Star the GitHub repository using gh when available')
+  .action(async function starAction(this: Command) {
+    await withHandling(this, async () => {
+      await starGodotFlow();
+      return { ok: true };
+    });
+  });
+
+program
+  .command('uninstall')
+  .description('Remove shell hooks from your shell rc file')
+  .action(async function uninstallAction(this: Command) {
+    await withHandling(this, async () => {
+      await uninstallHooks();
+      return { ok: true };
+    });
+  });
+
+program
+  .command('version')
+  .description('Print the current gopeak-cli version')
+  .action(async function versionAction(this: Command) {
+    await withHandling(this, async () => ({ version: getLocalVersion() }));
+  });
+
+program
+  .command('install-skill <platform>')
+  .description('Alias of setup <platform> for README compatibility')
+  .action(async function installSkillAction(this: Command, platform: string) {
     await withHandling(this, async () => {
       return copySkill(platform);
     });
