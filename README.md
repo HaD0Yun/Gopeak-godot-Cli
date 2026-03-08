@@ -10,6 +10,8 @@
 
 **220 Godot functions through 4 MCP meta-tools. 342 tokens instead of 18,606.** ([measured](benchmark/evidence/benchmark-report.json))
 
+These benchmark/function-count claims are CI-verified from committed evidence plus the built registry/server via `npm run verify:claims`.
+
 `godot-flow` is a 3-layer architecture that lets AI assistants discover and execute Godot engine capabilities without loading massive tool schemas into context. Born from [GoPeak (godot-mcp)](https://github.com/HaD0Yun/godot-mcp), it compresses 220 individually-registered MCP tools into 4 meta-tools — a **54× token reduction** (measured via actual JSON-RPC `tools/list` responses). Adding functions costs zero extra tokens.
 
 > **Successor to GoPeak**: 220 functions (110 more than GoPeak's 110), same Godot integration depth, radically smaller context footprint.
@@ -20,7 +22,7 @@
 
 | Problem with traditional MCP | godot-flow Solution |
 |---|---|
-| 110+ tool schemas loaded into every prompt (~18,600 tokens) | 4 meta-tool schemas (~342 tokens) |
+| 110+ tool schemas loaded into every prompt (~18,606 tokens) | 4 meta-tool schemas (~342 tokens) |
 | AI context wasted on schema definitions | AI context focused on your actual task |
 | Adding tools means even more token overhead | Adding functions costs zero extra tokens |
 | Each tool is a separate registration | Functions are data in a searchable registry |
@@ -41,7 +43,8 @@ Reduction: GoPeak legacy → godot-flow = 54.44× fewer chars
 ```
 
 Token estimate: `chars ÷ 4` (GPT-family approximation).
-Reproduce: `npx tsx scripts/benchmark-tokens.ts`
+Verify in CI/local: `npm run build && npm run verify:claims`
+Full benchmark refresh: `npx tsx scripts/benchmark-tokens.ts` (requires benchmark env/tool paths)
 Evidence: [`benchmark/evidence/benchmark-report.json`](benchmark/evidence/benchmark-report.json)
 
 The AI discovers functions on-demand via `listfunc`/`findfunc`/`viewfunc`, then executes with `execute`. No upfront schema loading.
@@ -678,7 +681,7 @@ and show the stack trace when hit."
 | | GoPeak | godot-flow |
 |---|---|---|
 | **Architecture** | 110 individual MCP tools | 4 meta-tools + function registry |
-| **Context cost** | ~18,600 tokens per session (measured) | ~342 tokens per session (measured) |
+| **Context cost** | ~18,606 tokens per session (measured) | ~342 tokens per session (measured) |
 | **Function count** | 110 | 220 |
 | **Execution engines** | 4 (headless, runtime, LSP, DAP) | 4 (same engines, cleaner routing) |
 | **Input validation** | Per-tool Zod schemas | Dynamic Zod from registry schemas |

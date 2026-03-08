@@ -31,3 +31,6 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Verify README claims
+        run: npm run build && npm run verify:claims

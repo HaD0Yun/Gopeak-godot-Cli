@@ -17,6 +17,7 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
+    "verify:claims": "node scripts/verify-readme-claims.mjs",
     "prepare": "npm run build",
     "postinstall": "node -e \"try{require('child_process').execFileSync(process.execPath,['dist/cli.js','setup','--silent'],{stdio:'ignore'})}catch{}\"",
     "prepack": "npm run build",

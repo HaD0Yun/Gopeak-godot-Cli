@@ -22,11 +22,15 @@ import { fileURLToPath } from 'node:url';
 
 // ── Config ──────────────────────────────────────────────────────────
 
-const GOPEAK_CMD = 'node';
-const GOPEAK_ARGS = [path.resolve('/home/doyun/godot-mcp/build/index.js')];
+const GOPEAK_CMD = process.env.GOPEAK_BENCHMARK_CMD ?? 'node';
+const GOPEAK_ARGS = [
+  path.resolve(process.env.GOPEAK_BENCHMARK_ENTRY ?? '/home/doyun/godot-mcp/build/index.js'),
+];
 
-const FLOW_CMD = 'node';
-const FLOW_ARGS = [path.resolve('/home/doyun/godot-flow/dist/mcp/index.js')];
+const FLOW_CMD = process.env.GODOT_FLOW_BENCHMARK_CMD ?? 'node';
+const FLOW_ARGS = [
+  path.resolve(process.env.GODOT_FLOW_BENCHMARK_ENTRY ?? path.resolve(__dirname, '..', 'dist', 'mcp', 'index.js')),
+];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
