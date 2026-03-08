@@ -1,7 +1,6 @@
 import {
   APP_NAME,
   PACKAGE_NAME,
-  REPO_URL,
   clearNotifyFile,
   compareSemver,
   ensureFlowDir,
@@ -24,20 +23,20 @@ export async function checkForUpdates(args: string[] = []): Promise<void> {
   }
 
   const currentVersion = getLocalVersion();
-  const latestVersion = await fetchLatestVersion();
+  const latestInfo = await fetchLatestVersion();
 
-  if (!latestVersion) {
+  if (!latestInfo) {
     if (!isQuiet) {
-      console.log(`⚠️  Could not reach the npm registry for ${PACKAGE_NAME}.`);
+      console.log(`⚠️  Could not reach npm or GitHub to check ${PACKAGE_NAME} updates.`);
     }
     return;
   }
 
-  if (compareSemver(latestVersion, currentVersion) > 0) {
+  if (compareSemver(latestInfo.version, currentVersion) > 0) {
     if (isQuiet) {
-      console.log(`🚀 ${APP_NAME} v${latestVersion} available! Run: npm update -g ${PACKAGE_NAME}`);
+      console.log(`🚀 ${APP_NAME} v${latestInfo.version} available from ${latestInfo.channel}! Run: ${latestInfo.updateCommand}`);
     } else {
-      printUpdateBox(currentVersion, latestVersion);
+      printUpdateBox(currentVersion, latestInfo.version, latestInfo.updateCommand, latestInfo.releaseUrl, latestInfo.channel);
     }
     return;
   }
@@ -53,17 +52,17 @@ async function runBackgroundCheck(): Promise<void> {
   }
 
   const currentVersion = getLocalVersion();
-  const latestVersion = await fetchLatestVersion();
+  const latestInfo = await fetchLatestVersion();
 
   updateCacheTimestamp();
 
-  if (!latestVersion) {
+  if (!latestInfo) {
     return;
   }
 
-  if (compareSemver(latestVersion, currentVersion) > 0) {
+  if (compareSemver(latestInfo.version, currentVersion) > 0) {
     writeNotifyFile(
-      `🚀 ${APP_NAME} v${latestVersion} available! (current: v${currentVersion})\n   Run: npm update -g ${PACKAGE_NAME}`,
+      `🚀 ${APP_NAME} v${latestInfo.version} available! (current: v${currentVersion}, channel: ${latestInfo.channel})\n   Run: ${latestInfo.updateCommand}`,
     );
     return;
   }
@@ -71,19 +70,27 @@ async function runBackgroundCheck(): Promise<void> {
   clearNotifyFile();
 }
 
-function printUpdateBox(currentVersion: string, latestVersion: string): void {
+function printUpdateBox(
+  currentVersion: string,
+  latestVersion: string,
+  updateCommand: string,
+  releaseUrl: string,
+  channel: string,
+): void {
   const line1 = `  🚀 ${APP_NAME} v${latestVersion} available! (current: v${currentVersion})`;
-  const line2 = `  npm update -g ${PACKAGE_NAME}`;
-  const line3 = `  ${REPO_URL}/releases`;
-  const width = Math.max(line1.length, line2.length, line3.length) + 2;
+  const line2 = `  Channel: ${channel}`;
+  const line3 = `  ${updateCommand}`;
+  const line4 = `  ${releaseUrl}`;
+  const width = Math.max(line1.length, line2.length, line3.length, line4.length) + 2;
   const pad = (value: string) => value + ' '.repeat(Math.max(0, width - value.length));
 
   console.log('');
   console.log(`╔${'═'.repeat(width)}╗`);
   console.log(`║${pad(line1)}║`);
-  console.log(`║${' '.repeat(width)}║`);
   console.log(`║${pad(line2)}║`);
+  console.log(`║${' '.repeat(width)}║`);
   console.log(`║${pad(line3)}║`);
+  console.log(`║${pad(line4)}║`);
   console.log(`╚${'═'.repeat(width)}╝`);
   console.log('');
 }

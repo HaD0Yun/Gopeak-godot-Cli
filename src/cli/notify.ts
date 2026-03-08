@@ -1,6 +1,7 @@
 import { createInterface } from 'node:readline';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import {
+  APP_NAME,
   NOTIFY_FILE,
   ONBOARDING_SHOWN_FILE,
   PACKAGE_NAME,
@@ -57,7 +58,7 @@ export async function showNotification(): Promise<void> {
     if (alreadyStarred === true) {
       console.log('  ⭐ GitHub repository already starred. Thank you!');
     } else if (alreadyStarred === false) {
-      const wantsStar = await askYesNo('  ⭐ Star gopeak-cli on GitHub? (y/n): ');
+      const wantsStar = await askYesNo(`  ⭐ Star ${APP_NAME} on GitHub? (y/n): `);
       if (wantsStar) {
         await handleStar();
       } else {
@@ -110,11 +111,7 @@ async function handleStar(): Promise<void> {
 
 function askYesNo(prompt: string): Promise<boolean> {
   return new Promise((resolve) => {
-    const rl = createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
     rl.question(prompt, (answer) => {
       rl.close();
       resolve(answer.trim().toLowerCase() === 'y');
@@ -125,12 +122,12 @@ function askYesNo(prompt: string): Promise<boolean> {
 function printOnboarding(): void {
   const version = getLocalVersion();
   console.log('╔══════════════════════════════════════════════════════╗');
-  console.log(`║  🎮 gopeak-cli v${version}${' '.repeat(Math.max(0, 34 - version.length))}║`);
+  console.log(`║  🎮 ${APP_NAME} v${version}${' '.repeat(Math.max(0, 34 - version.length))}║`);
   console.log('║                                                      ║');
   console.log('║  CLI-first Godot automation for humans and agents    ║');
   console.log('║                                                      ║');
   console.log(`║  📖 Docs:   ${REPO_URL.padEnd(39)}║`);
-  console.log(`║  ⭐ Star:   ${'gopeak-cli star'.padEnd(39)}║`);
+  console.log(`║  ⭐ Star:   ${`${APP_NAME} star`.padEnd(39)}║`);
   console.log(`║  🔄 Update: ${`npm update -g ${PACKAGE_NAME}`.padEnd(39)}║`);
   console.log('╚══════════════════════════════════════════════════════╝');
   console.log('');
