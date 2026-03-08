@@ -18,7 +18,7 @@ const LAST_CHECK_FILE = join(FLOW_DIR, 'last-check');
 const NOTIFY_FILE = join(FLOW_DIR, 'notify');
 const ONBOARDING_SHOWN_FILE = join(FLOW_DIR, 'onboarding-shown');
 const STAR_PROMPTED_FILE = join(FLOW_DIR, 'star-prompted');
-const DETECTABLE_COMMANDS = ['claude', 'claudecode', 'codex', 'gemini', 'copilot', 'opencode', 'omx'] as const;
+const DETECTABLE_COMMANDS = ['claude', 'claudecode', 'codex', 'cursor', 'gemini', 'copilot', 'omc', 'opencode', 'omx'] as const;
 
 interface RemoteVersionInfo {
   version: string;

@@ -15,14 +15,15 @@ import {
 const MARKER_START = '# >>> gopeak-cli shell hooks >>>';
 const MARKER_END = '# <<< gopeak-cli shell hooks <<<';
 
-export { MARKER_START, MARKER_END };
+export { MARKER_START, MARKER_END, generateHookBlock, removeHookBlock };
 
 export async function setupShellHooks(args: string[] = []): Promise<void> {
   const silent = args.includes('--silent');
+  const wrapAiClis = args.includes('--wrap-ai-clis');
   const shellName = getShellName();
   const rcFile = getShellRcFile();
   const detectedCommands = await detectAvailableCommands();
-  const hookBlock = generateHookBlock(shellName, detectedCommands);
+  const hookBlock = generateHookBlock(shellName, detectedCommands, { wrapAiClis });
   const log = silent ? (..._args: unknown[]) => undefined : console.log.bind(console);
 
   if (!existsSync(rcFile)) {
@@ -44,6 +45,9 @@ export async function setupShellHooks(args: string[] = []): Promise<void> {
   }
 
   log(`   Detected AI CLIs: ${detectedCommands.length > 0 ? detectedCommands.join(', ') : 'none'}`);
+  if (!wrapAiClis) {
+    log(`   Passive mode: no third-party CLI wrappers installed. Re-run with ${APP_NAME} setup --wrap-ai-clis to enable them.`);
+  }
   log(`   Reload with: source ${rcFile}`);
   log('');
 
@@ -59,29 +63,43 @@ export async function setupShellHooks(args: string[] = []): Promise<void> {
   }
 }
 
-function generateHookBlock(shellName: 'bash' | 'zsh', detectedCommands: string[]): string {
+function generateHookBlock(
+  shellName: 'bash' | 'zsh',
+  detectedCommands: string[],
+  options: { wrapAiClis?: boolean } = {},
+): string {
+  const wrapAiClis = options.wrapAiClis ?? false;
   const standardCommands = detectedCommands.filter((command) => command !== 'omx');
   const lines: string[] = [
     MARKER_START,
-    `# ${APP_NAME} update notifications for AI CLI tools`,
+    wrapAiClis
+      ? `# ${APP_NAME} update notifications for AI CLI tools`
+      : `# ${APP_NAME} shell hooks (passive by default; no third-party CLI wrapping)`,
     `# Installed by: ${APP_NAME} setup | Remove with: ${APP_NAME} uninstall`,
     `# Detected at setup: ${detectedCommands.length > 0 ? detectedCommands.join(', ') : 'none from [' + DETECTABLE_COMMANDS.join(', ') + ']'}`,
-    '',
-    '__gopeak_cli_precheck() {',
-    '  local notify="$HOME/.gopeak-cli/notify"',
-    '  local star="$HOME/.gopeak-cli/star-prompted"',
-    '  if [ -f "$notify" ] || [ ! -f "$star" ]; then',
-    `    command -v ${APP_NAME} >/dev/null 2>&1 && ${APP_NAME} notify`,
-    '  fi',
-    '  local ts="$HOME/.gopeak-cli/last-check"',
-    '  if [ -f "$ts" ]; then',
-    '    local age=$(( $(date +%s) - $(cat "$ts") ))',
-    '    [ "$age" -lt 86400 ] && return',
-    '  fi',
-    `  command -v ${APP_NAME} >/dev/null 2>&1 && ${APP_NAME} check --bg >/dev/null 2>&1 &`,
-    '}',
-    '',
   ];
+
+  if (!wrapAiClis) {
+    lines.push(`# To wrap detected AI CLIs with ${APP_NAME} prechecks, rerun: ${APP_NAME} setup --wrap-ai-clis`);
+    lines.push(MARKER_END);
+    return lines.join('\n');
+  }
+
+  lines.push('');
+  lines.push('__gopeak_cli_precheck() {');
+  lines.push('  local notify="$HOME/.gopeak-cli/notify"');
+  lines.push('  local star="$HOME/.gopeak-cli/star-prompted"');
+  lines.push('  if [ -f "$notify" ] || [ ! -f "$star" ]; then');
+  lines.push(`    command -v ${APP_NAME} >/dev/null 2>&1 && ${APP_NAME} notify`);
+  lines.push('  fi');
+  lines.push('  local ts="$HOME/.gopeak-cli/last-check"');
+  lines.push('  if [ -f "$ts" ]; then');
+  lines.push('    local age=$(( $(date +%s) - $(cat "$ts") ))');
+  lines.push('    [ "$age" -lt 86400 ] && return');
+  lines.push('  fi');
+  lines.push(`  command -v ${APP_NAME} >/dev/null 2>&1 && ${APP_NAME} check --bg >/dev/null 2>&1 &`);
+  lines.push('}');
+  lines.push('');
 
   for (const command of standardCommands) {
     lines.push(`${command}() { __gopeak_cli_precheck; command ${command} "$@"; }`);
@@ -112,7 +130,7 @@ function generateHookBlock(shellName: 'bash' | 'zsh', detectedCommands: string[]
 
 function removeHookBlock(content: string): string {
   const pattern = new RegExp(`\\n?${escapeRegex(MARKER_START)}[\\s\\S]*?${escapeRegex(MARKER_END)}\\n?`, 'g');
-  return content.replace(pattern, '').trimEnd();
+  return content.replace(pattern, '\n').replace(/\n{3,}/g, '\n\n').replace(/^\n+/, '').trimEnd();
 }
 
 function escapeRegex(value: string): string {

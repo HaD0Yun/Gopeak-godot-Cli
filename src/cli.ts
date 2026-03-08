@@ -574,11 +574,16 @@ program
   .command('setup [platform]')
   .description('Install shell hooks or AI-platform SKILL.md integration')
   .option('--silent', 'Suppress shell setup logs')
-  .action(async function setupAction(this: Command, platform?: string, options?: { silent?: boolean }) {
+  .option('--wrap-ai-clis', 'Wrap detected AI CLIs with gopeak-cli prechecks')
+  .action(async function setupAction(this: Command, platform?: string, options?: { silent?: boolean; wrapAiClis?: boolean }) {
     await withHandling(this, async () => {
       const normalizedPlatform = platform?.trim().toLowerCase();
       if (!normalizedPlatform || normalizedPlatform === 'shell' || normalizedPlatform === 'hooks') {
-        await setupShellHooks(options?.silent ? ['--silent'] : []);
+        const setupArgs = [
+          ...(options?.silent ? ['--silent'] : []),
+          ...(options?.wrapAiClis ? ['--wrap-ai-clis'] : []),
+        ];
+        await setupShellHooks(setupArgs);
         return { ok: true, mode: 'shell-hooks' };
       }
 
