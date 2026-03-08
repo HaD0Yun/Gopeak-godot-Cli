@@ -10,7 +10,7 @@ on:
   pull_request:
 
 jobs:
-  build-and-typecheck:
+  build-typecheck-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,3 +31,6 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Test
+        run: npm test

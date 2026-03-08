@@ -1,7 +1,7 @@
 {
   "name": "gopeak-cli",
   "version": "1.0.0",
-  "description": "CLI-first Godot automation with optional MCP integration via 4 meta-tools",
+  "description": "GoPeak CLI for Godot automation, shipping the godot-flow MCP architecture via 4 meta-tools",
   "type": "module",
   "main": "dist/mcp/index.js",
   "bin": {
@@ -20,7 +20,7 @@
     "prepare": "npm run build",
     "postinstall": "node -e \"try{require('child_process').execFileSync(process.execPath,['dist/cli.js','setup','--silent'],{stdio:'ignore'})}catch{}\"",
     "prepack": "npm run build",
-    "test": "node dist/daemon/request-loop.test.js"
+    "test": "node --test $(find dist -name '*.test.js' -print)"
   },
   "keywords": [
     "godot",

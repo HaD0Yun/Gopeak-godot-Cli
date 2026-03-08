@@ -1,16 +1,19 @@
-# godot-flow
+# GoPeak CLI
 
 [![](https://badge.mcpx.dev?type=server 'MCP Server')](https://modelcontextprotocol.io/introduction)
 [![Made with Godot](https://img.shields.io/badge/Made%20with-Godot-478CBF?style=flat&logo=godot%20engine&logoColor=white)](https://godotengine.org)
 [![](https://img.shields.io/badge/Node.js-339933?style=flat&logo=nodedotjs&logoColor=white 'Node.js')](https://nodejs.org/en/download/)
 [![](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white 'TypeScript')](https://www.typescriptlang.org/)
-[![](https://img.shields.io/github/last-commit/HaD0Yun/godot-flow 'Last Commit')](https://github.com/HaD0Yun/godot-flow/commits/main)
-[![](https://img.shields.io/github/stars/HaD0Yun/godot-flow 'Stars')](https://github.com/HaD0Yun/godot-flow/stargazers)
+[![](https://img.shields.io/github/last-commit/HaD0Yun/Gopeak-godot-Cli 'Last Commit')](https://github.com/HaD0Yun/Gopeak-godot-Cli/commits/main)
+[![](https://img.shields.io/github/stars/HaD0Yun/Gopeak-godot-Cli 'Stars')](https://github.com/HaD0Yun/Gopeak-godot-Cli/stargazers)
+[![](https://img.shields.io/badge/npm-gopeak--cli-CB3837?style=flat&logo=npm&logoColor=white 'npm package')](https://www.npmjs.com/package/gopeak-cli)
 [![](https://img.shields.io/badge/License-MIT-red.svg 'MIT License')](https://opensource.org/licenses/MIT)
 
 **220 Godot functions through 4 MCP meta-tools. 342 tokens instead of 18,606.** ([measured](benchmark/evidence/benchmark-report.json))
 
-`godot-flow` is a 3-layer architecture that lets AI assistants discover and execute Godot engine capabilities without loading massive tool schemas into context. Born from [GoPeak (godot-mcp)](https://github.com/HaD0Yun/godot-mcp), it compresses 220 individually-registered MCP tools into 4 meta-tools — a **54× token reduction** (measured via actual JSON-RPC `tools/list` responses). Adding functions costs zero extra tokens.
+`gopeak-cli` is the published npm package and terminal command for this repository (`HaD0Yun/Gopeak-godot-Cli`). It ships the `godot-flow` MCP architecture: a 3-layer design that lets AI assistants discover and execute Godot engine capabilities without loading massive tool schemas into context. Born from [GoPeak (godot-mcp)](https://github.com/HaD0Yun/godot-mcp), the `godot-flow` layer compresses 220 individually-registered MCP tools into 4 meta-tools — a **54× token reduction** (measured via actual JSON-RPC `tools/list` responses). Adding functions costs zero extra tokens.
+
+> **Naming note**: repo = `Gopeak-godot-Cli`, package/CLI = `gopeak-cli`, MCP server/architecture = `godot-flow`.
 
 > **Successor to GoPeak**: 220 functions (110 more than GoPeak's 110), same Godot integration depth, radically smaller context footprint.
 
@@ -104,21 +107,21 @@ The AI discovers functions on-demand via `listfunc`/`findfunc`/`viewfunc`, then 
 ### Quick Start (recommended)
 
 ```bash
-npx godot-flow listfunc
+npx gopeak-cli listfunc
 ```
 
 ### Global Install
 
 ```bash
-npm install -g godot-flow
-godot-flow listfunc
+npm install -g gopeak-cli
+gopeak-cli listfunc
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/HaD0Yun/godot-flow.git
-cd godot-flow
+git clone https://github.com/HaD0Yun/Gopeak-godot-Cli.git
+cd Gopeak-godot-Cli
 npm install
 npm run build
 ```
@@ -132,8 +135,8 @@ npm run build
 ```json
 {
   "mcpServers": {
-    "godot-flow": {
-      "command": "godot-flow",
+    "gopeak-cli": {
+      "command": "gopeak-cli",
       "args": [],
       "env": {
         "GODOT_FLOW_PROJECT_PATH": "/path/to/your/godot/project",
@@ -150,8 +153,8 @@ npm run build
 {
   "mcp": {
     "servers": {
-      "godot-flow": {
-        "command": "godot-flow",
+      "gopeak-cli": {
+        "command": "gopeak-cli",
         "args": [],
         "env": {
           "GODOT_FLOW_PROJECT_PATH": "/path/to/your/godot/project"
@@ -167,9 +170,9 @@ npm run build
 ```json
 {
   "mcpServers": {
-    "godot-flow": {
+    "gopeak-cli": {
       "command": "npx",
-      "args": ["-y", "godot-flow"],
+      "args": ["-y", "gopeak-cli"],
       "env": {
         "GODOT_FLOW_PROJECT_PATH": "/path/to/your/godot/project"
       }
@@ -181,6 +184,8 @@ npm run build
 ---
 
 ## 4 MCP Meta-Tools
+
+The executable you run is `gopeak-cli`, while the MCP server metadata exposed to clients remains `godot-flow`.
 
 These are the **only 4 tools** exposed to your AI assistant:
 
@@ -230,27 +235,27 @@ The CLI mirrors the MCP tools for terminal use and debugging:
 
 ```bash
 # List all functions
-godot-flow listfunc
+gopeak-cli listfunc
 
 # List functions in a category
-godot-flow listfunc --category scene
+gopeak-cli listfunc --category scene
 
 # Search for functions
-godot-flow findfunc "breakpoint"
-godot-flow findfunc "script" --category resource
+gopeak-cli findfunc "breakpoint"
+gopeak-cli findfunc "script" --category resource
 
 # View function details (including input schema)
-godot-flow viewfunc create_scene
+gopeak-cli viewfunc create_scene
 
 # Execute a function
-godot-flow exec create_scene --args '{"scene_name": "Player", "root_type": "CharacterBody2D"}'
-godot-flow exec run_project
-godot-flow exec lsp_diagnostics --args '{"script_path": "res://scripts/player.gd"}'
+gopeak-cli exec create_scene --args '{"scene_name": "Player", "root_type": "CharacterBody2D"}'
+gopeak-cli exec run_project
+gopeak-cli exec lsp_diagnostics --args '{"script_path": "res://scripts/player.gd"}'
 
 # Install AI platform skill files
-godot-flow install-skill --platform opencode
-godot-flow install-skill --platform claude
-godot-flow install-skill --platform codex
+gopeak-cli install-skill --platform opencode
+gopeak-cli install-skill --platform claude
+gopeak-cli install-skill --platform codex
 ```
 
 ---
@@ -270,13 +275,13 @@ godot-flow install-skill --platform codex
 
 ## AI Platform Skills
 
-godot-flow includes lightweight SKILL.md files (< 100 lines each) that teach AI assistants the optimal workflow patterns without embedding full schemas:
+gopeak-cli includes lightweight SKILL.md files (< 100 lines each) that teach AI assistants the optimal workflow patterns without embedding full schemas:
 
 | Platform | Install Command | Lines |
 |----------|----------------|-------|
-| OpenCode | `godot-flow install-skill --platform opencode` | 34 |
-| Claude | `godot-flow install-skill --platform claude` | 54 |
-| Codex | `godot-flow install-skill --platform codex` | 54 |
+| OpenCode | `gopeak-cli install-skill --platform opencode` | 34 |
+| Claude | `gopeak-cli install-skill --platform claude` | 54 |
+| Codex | `gopeak-cli install-skill --platform codex` | 54 |
 
 Skills teach the AI the **discover → inspect → execute** pattern:
 1. `findfunc` or `listfunc` to discover what's available
@@ -798,19 +803,19 @@ CLI가 4개 서브커맨드를 모두 올바르게 실행하는지 확인합니�
 
 ```bash
 # 전체 함수 목록 출력 — 110개가 나와야 함
-godot-flow listfunc
+gopeak-cli listfunc
 
 # 카테고리 필터링 — dap 카테고리에 10개 함수
-godot-flow listfunc --category dap
+gopeak-cli listfunc --category dap
 
 # 패턴 검색 — "break"로 검색하면 dap_set_breakpoint, dap_remove_breakpoint 포함
-godot-flow findfunc break
+gopeak-cli findfunc break
 
 # 함수 상세 조회 — inputSchema가 출력되어야 함
-godot-flow viewfunc create_scene
+gopeak-cli viewfunc create_scene
 
 # 실행 (Godot 프로젝트 경로 필요)
-GODOT_FLOW_PROJECT_PATH=/path/to/project godot-flow exec get_project_info
+GODOT_FLOW_PROJECT_PATH=/path/to/project gopeak-cli exec get_project_info
 ```
 
 ### 직접 실행해 볼 수 있는 시나리오
@@ -820,13 +825,13 @@ Godot 프로젝트가 있다면, 아래 시나리오를 순서대로 실행해�
 **시나리오 1: 함수 탐색 → 조회 → 실행 (Headless)**
 ```bash
 # 1. scene 관련 함수 찾기
-godot-flow findfunc scene --category scene
+gopeak-cli findfunc scene --category scene
 
 # 2. create_scene의 인자 확인
-godot-flow viewfunc create_scene
+gopeak-cli viewfunc create_scene
 
 # 3. 씬 생성 실행
-godot-flow exec create_scene --args '{"scene_name": "TestEnemy", "root_type": "CharacterBody2D"}'
+gopeak-cli exec create_scene --args '{"scene_name": "TestEnemy", "root_type": "CharacterBody2D"}'
 
 # 4. 결과 확인: res://scenes/TestEnemy.tscn 파일이 생성됨
 ```
@@ -834,7 +839,7 @@ godot-flow exec create_scene --args '{"scene_name": "TestEnemy", "root_type": "C
 **시나리오 2: LSP 진단 (에디터 실행 필요)**
 ```bash
 # Godot 에디터가 열려 있어야 LSP 포트 6005가 활성화됨
-godot-flow exec lsp_diagnostics --args '{"script_path": "res://scripts/player.gd"}'
+gopeak-cli exec lsp_diagnostics --args '{"script_path": "res://scripts/player.gd"}'
 
 # 에러/경고 목록이 JSON으로 반환됨
 ```
@@ -842,31 +847,31 @@ godot-flow exec lsp_diagnostics --args '{"script_path": "res://scripts/player.gd
 **시나리오 3: 런타임 인스펙션 (게임 실행 필요)**
 ```bash
 # 1. 프로젝트 실행
-godot-flow exec run_project
+gopeak-cli exec run_project
 
 # 2. 라이브 씬 트리 조회
-godot-flow exec inspect_runtime_tree
+gopeak-cli exec inspect_runtime_tree
 
 # 3. 스크린샷 캡처
-godot-flow exec capture_screenshot
+gopeak-cli exec capture_screenshot
 
 # 4. 프로젝트 종료
-godot-flow exec stop_project
+gopeak-cli exec stop_project
 ```
 
 **시나리오 4: DAP 디버깅 (게임 실행 필요)**
 ```bash
 # 1. 브레이크포인트 설정
-godot-flow exec dap_set_breakpoint --args '{"path": "res://scripts/player.gd", "line": 42}'
+gopeak-cli exec dap_set_breakpoint --args '{"path": "res://scripts/player.gd", "line": 42}'
 
 # 2. 브레이크포인트에서 멈추면 스택 트레이스 확인
-godot-flow exec dap_get_stack_trace
+gopeak-cli exec dap_get_stack_trace
 
 # 3. 변수 평가
-godot-flow exec dap_evaluate --args '{"expression": "player.position"}'
+gopeak-cli exec dap_evaluate --args '{"expression": "player.position"}'
 
 # 4. 실행 계속
-godot-flow exec dap_continue
+gopeak-cli exec dap_continue
 ```
 
 ### 코드 품질 기준

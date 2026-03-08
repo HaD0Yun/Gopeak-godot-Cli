@@ -8,9 +8,10 @@ import { executeDAP } from '../engine/dap.js';
 import { GodotFlowError } from '../errors.js';
 import { jsonSchemaToZod } from '../schema-utils.js';
 import { loadConfig } from '../config.js';
+import { APP_VERSION } from '../version.js';
 import type { DAPConfig, HeadlessConfig, LSPConfig, RuntimeConfig } from '../types/engine.js';
 
-const toolResult = (value: unknown): {
+export const toolResult = (value: unknown): {
   content: Array<{ type: 'text'; text: string }>;
   structuredContent: Record<string, unknown>;
 } => {
@@ -24,7 +25,7 @@ const toolResult = (value: unknown): {
   };
 };
 
-function toToolError(error: unknown): { content: Array<{ type: 'text'; text: string }>; isError: true } {
+export function toToolError(error: unknown): { content: Array<{ type: 'text'; text: string }>; isError: true } {
   if (error instanceof GodotFlowError) {
     return error.toMcpError();
   }
@@ -109,7 +110,7 @@ export function createServer(): McpServer {
 
   const server = new McpServer({
     name: 'godot-flow',
-    version: '0.1.0',
+    version: APP_VERSION,
   });
 
   server.tool(
