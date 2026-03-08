@@ -1,5 +1,9 @@
 # GoPeak CLI
 
+<p align="center">
+  <img src="assets/gopeak-banner.png" alt="GoPeak banner" width="720" />
+</p>
+
 [![npm version](https://img.shields.io/npm/v/gopeak-cli?logo=npm)](https://www.npmjs.com/package/gopeak-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-red.svg)](LICENSE)
 [![Made with Godot](https://img.shields.io/badge/Made%20with-Godot-478CBF?logo=godotengine&logoColor=white)](https://godotengine.org)
