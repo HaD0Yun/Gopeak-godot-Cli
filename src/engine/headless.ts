@@ -1,14 +1,64 @@
+import { existsSync } from 'node:fs';
 import { spawn } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { GodotFlowError } from '../errors.js';
 import type { HeadlessConfig, ExecutionResult } from '../types/engine.js';
 
-const OPERATIONS_SCRIPT_PATH = 'src/scripts/godot_operations.gd';
+const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
+const OPERATIONS_SCRIPT_CANDIDATES = [
+  resolve(MODULE_DIR, '../scripts/godot_operations.gd'),
+  resolve(MODULE_DIR, '../../src/scripts/godot_operations.gd'),
+  resolve(process.cwd(), 'dist/scripts/godot_operations.gd'),
+  resolve(process.cwd(), 'src/scripts/godot_operations.gd'),
+];
+
+export function resolveOperationsScriptPath(): string {
+  for (const candidate of OPERATIONS_SCRIPT_CANDIDATES) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new GodotFlowError(
+    'EXECUTION_FAILED',
+    'Unable to locate godot_operations.gd for headless execution',
+    { candidates: OPERATIONS_SCRIPT_CANDIDATES },
+  );
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function parseExecutionResult(stdout: string): ExecutionResult {
+
+function toSnakeCaseKey(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[\s-]+/g, '_')
+    .toLowerCase();
+}
+
+function withSnakeCaseAliases<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => withSnakeCaseAliases(item)) as T;
+  }
+
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  const augmented: Record<string, unknown> = {};
+  for (const [key, entryValue] of Object.entries(value)) {
+    const normalizedValue = withSnakeCaseAliases(entryValue);
+    augmented[key] = normalizedValue;
+    augmented[toSnakeCaseKey(key)] = normalizedValue;
+  }
+
+  return augmented as T;
+}
+
+function parseExecutionResult(stdout: string, stderr = "", exitCode?: number | null): ExecutionResult {
   const trimmed = stdout.trim();
   if (!trimmed) {
     throw new GodotFlowError('EXECUTION_FAILED', 'Godot process produced empty stdout', {
@@ -48,8 +98,20 @@ function parseExecutionResult(stdout: string): ExecutionResult {
     }
   }
 
+  if ((exitCode ?? 0) === 0) {
+    return {
+      success: true,
+      data: {
+        stdout: trimmed,
+        ...(stderr.trim().length > 0 ? { stderr: stderr.trim() } : {}),
+      },
+    };
+  }
+
   throw new GodotFlowError('EXECUTION_FAILED', 'Failed to parse JSON result from Godot stdout', {
     stdout,
+    stderr,
+    exitCode: exitCode ?? undefined,
   });
 }
 
@@ -69,6 +131,7 @@ export async function executeHeadless(
   }
 
   const projectPath = config.projectPath;
+  const operationsScriptPath = resolveOperationsScriptPath();
 
   const startedAt = Date.now();
 
@@ -78,9 +141,9 @@ export async function executeHeadless(
       '--path',
       projectPath,
       '--script',
-      OPERATIONS_SCRIPT_PATH,
+      operationsScriptPath,
       fnName,
-      JSON.stringify(args),
+      JSON.stringify(withSnakeCaseAliases(args)),
     ];
 
     const child = spawn(config.godotPath, spawnArgs);
@@ -142,7 +205,7 @@ export async function executeHeadless(
       finish(() => {
         let parsedResult: ExecutionResult;
         try {
-          parsedResult = parseExecutionResult(stdout);
+          parsedResult = parseExecutionResult(stdout, stderr, code);
         } catch (parseError) {
           if (parseError instanceof GodotFlowError) {
             reject(
