@@ -18,7 +18,7 @@
     "watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "prepare": "npm run build",
-    "postinstall": "node -e \"try{require('child_process').execFileSync(process.execPath,['dist/cli.js','setup','--silent'],{stdio:'ignore'})}catch{}\"",
+    "postinstall": "node -e \"console.log('[gopeak-cli] Optional shell hooks are not installed automatically. Run \\\"gopeak-cli setup\\\" to enable them.')\"",
     "prepack": "npm run build",
     "test": "node dist/daemon/request-loop.test.js"
   },

@@ -1025,7 +1025,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## Shell helper commands
 
-`gopeak-cli` can now install shell hooks that detect supported AI CLI commands already present on your machine and wrap them with cached update + GitHub star prompts.
+`gopeak-cli` can optionally install shell hooks that detect supported AI CLI commands already present on your machine and wrap them with cached update + GitHub star prompts. `npm install` does **not** modify your shell rc files automatically; shell integration is explicit opt-in via `gopeak-cli setup`.
 
 Supported command detection at setup time: `claude`, `claudecode`, `codex`, `gemini`, `copilot`, `opencode`, `omx`.
 
