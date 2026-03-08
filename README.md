@@ -104,8 +104,18 @@ The AI discovers functions on-demand via `listfunc`/`findfunc`/`viewfunc`, then 
 ### Quick Start (recommended)
 
 ```bash
-npx godot-flow listfunc
+# Safe, read-only diagnostics first
+npx gopeak-cli doctor --format text
+
+# Works without a local Godot project/editor/runtime
+npx gopeak-cli listfunc
+
+# Add project-aware commands after configuring a project path
+export GODOT_FLOW_PROJECT_PATH=/path/to/project
+export GODOT_FLOW_GODOT_PATH=/path/to/Godot_v4.x
 ```
+
+`doctor` is the recommended first-run command. It reports missing project path, missing Godot binary, and runtime/editor/debug connectivity with suggested next steps instead of generic connection failures.
 
 ### Global Install
 
@@ -221,6 +231,20 @@ Output: Execution result (engine-specific)
 ```
 
 All 4 tools return both human-readable `content` (text) and machine-readable `structuredContent` (JSON) for maximum interoperability.
+
+## Capability Boundaries
+
+Use these prerequisite boundaries to avoid first-run confusion:
+
+| Capability | Example commands | Requires project path? | Requires Godot binary? | Requires live editor/runtime connectivity? |
+|---|---|---:|---:|---:|
+| Metadata-only discovery | `listfunc`, `findfunc`, `viewfunc`, `config`, `doctor` | No | No | No |
+| Headless project actions | `exec get_project_info`, most scene/resource operations | Yes | Yes | No |
+| Runtime bridge actions | runtime-engine functions | Usually yes | No | Yes - running game/runtime bridge |
+| Script/LSP actions | `exec lsp_diagnostics` | Yes | No | Yes - Godot editor open on LSP port |
+| Debug/DAP actions | DAP functions, `daemon start` | Yes | No | Yes - Godot debug adapter / daemon |
+
+If you are unsure which prerequisite is missing, run `gopeak-cli doctor --format text` first.
 
 ---
 
@@ -905,15 +929,17 @@ node -e "const m=require('./dist/registry/index');console.log(m.registry.count()
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| **Godot not found** | Set `GODOT_FLOW_GODOT_PATH` to your Godot executable |
-| **No MCP tools visible** | Restart your MCP client after configuration |
-| **Project path invalid** | Ensure path contains `project.godot` |
-| **Runtime tools not working** | Start the game with `run_project` first, ensure runtime addon is enabled |
-| **LSP connection refused** | Open project in Godot editor (starts LSP automatically on port 6005) |
-| **DAP not connecting** | Ensure no other debugger is connected on port 6006 |
-| **Timeout errors** | Increase `GODOT_FLOW_TIMEOUT` for large projects |
+Start with: `gopeak-cli doctor --format text`
+
+| Problem | Actionable guidance |
+|---------|---------------------|
+| **Missing project path** | Run inside a Godot project, pass `--project-path /path/to/project`, or set `GODOT_FLOW_PROJECT_PATH`. The path must contain `project.godot`. |
+| **Godot not found** | Set `GODOT_FLOW_GODOT_PATH` to your Godot 4 executable and rerun `doctor`. |
+| **No MCP tools visible** | Restart your MCP client after configuration. |
+| **Runtime connection refused** | Start the game/project with the runtime addon enabled, then retry. `doctor` will show whether port `7777` is reachable. |
+| **LSP/editor connection refused** | Open the project in the Godot editor and wait for it to finish loading. `doctor` checks whether LSP port `6005` is reachable. |
+| **DAP/debug not connecting** | Start a Godot debug session or `gopeak-cli daemon start`, and ensure no other debugger is holding port `6006`. |
+| **Timeout errors** | Increase `GODOT_FLOW_TIMEOUT` for large projects or slow startup. |
 
 ---
 

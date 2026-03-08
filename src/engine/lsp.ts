@@ -145,10 +145,11 @@ class GodotLSPClient {
         if (!settled && !this.connected) {
           settled = true;
           rejectConnect(
-            new GodotFlowError('ENGINE_CONNECTION_FAILED', 'Failed to connect to Godot LSP server', {
+            new GodotFlowError('ENGINE_CONNECTION_FAILED', `Failed to connect to the Godot editor LSP at ${this.host}:${this.port}. Open the project in the Godot editor, wait for it to finish loading, then retry.`, {
               host: this.host,
               port: this.port,
               message: error.message,
+              suggestedCommands: ['gopeak-cli doctor --format text'],
             }),
           );
         }
@@ -590,6 +591,13 @@ export async function executeLSP(
     const parsedArgs: JsonRecord = isRecord(args) ? args : {};
     const { filePath, content } = await loadDocumentContent(parsedArgs);
     const projectPath = typeof config.projectPath === 'string' ? config.projectPath : undefined;
+    if (!projectPath) {
+      throw new GodotFlowError('INVALID_ARGS', 'LSP execution requires a Godot project path. Pass --project-path or set GODOT_FLOW_PROJECT_PATH.', {
+        fnName,
+        envKey: 'GODOT_FLOW_PROJECT_PATH',
+        suggestedCommands: ['gopeak-cli doctor --format text'],
+      });
+    }
 
     let data: unknown;
 
@@ -666,7 +674,7 @@ export async function executeLSP(
       || message.includes('connect')
       || message.includes('Not connected')
     ) {
-      throw new GodotFlowError('ENGINE_CONNECTION_FAILED', `LSP connection failed: ${message}`, detailsBase);
+      throw new GodotFlowError('ENGINE_CONNECTION_FAILED', `LSP connection failed: ${message}. Open the project in the Godot editor and rerun gopeak-cli doctor if needed.`, { ...detailsBase, suggestedCommands: ['gopeak-cli doctor --format text'] });
     }
 
     throw new GodotFlowError('EXECUTION_FAILED', `LSP execution failed: ${message}`, detailsBase);

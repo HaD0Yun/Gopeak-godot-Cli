@@ -227,7 +227,7 @@ export async function executeRuntime(
 
     socket.on('error', (error: NodeJS.ErrnoException) => {
       const message = error.code === 'ECONNREFUSED'
-        ? `Failed to connect to Godot runtime at ${config.host}:${config.port}. Ensure the game is running with the runtime addon enabled.`
+        ? `Failed to connect to the Godot runtime at ${config.host}:${config.port}. Start the game/project with the runtime addon enabled, then retry.`
         : `Runtime TCP connection failed: ${error.message}`;
 
       finishReject(
@@ -237,6 +237,7 @@ export async function executeRuntime(
           port: config.port,
           code: error.code ?? 'UNKNOWN',
           cause: error.message,
+          suggestedCommands: ['gopeak-cli doctor --format text'],
         }),
       );
     });

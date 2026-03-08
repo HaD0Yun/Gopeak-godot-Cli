@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { Command } from 'commander';
+import { createConnection } from 'node:net';
 import { registry } from './registry/index.js';
 import { executeHeadless } from './engine/headless.js';
 import { executeRuntime } from './engine/runtime.js';
@@ -59,6 +60,12 @@ interface DoctorReport {
     failed: number;
   };
   checks: DoctorCheck[];
+}
+
+interface ConnectivityProbeResult {
+  ok: boolean;
+  errorCode?: string;
+  output?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -117,6 +124,21 @@ function serializeCell(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function isDoctorReport(value: unknown): value is DoctorReport {
+  return isRecord(value)
+    && isRecord(value.summary)
+    && Array.isArray(value.checks);
+}
+
+function printDoctorReport(report: DoctorReport): void {
+  process.stdout.write(`Doctor summary: ${report.summary.passed} passed, ${report.summary.warned} warned, ${report.summary.failed} failed\n`);
+
+  for (const check of report.checks) {
+    const icon = check.status === 'pass' ? '✓' : check.status === 'warn' ? '!' : '✗';
+    process.stdout.write(`${icon} ${check.name}: ${check.message}\n`);
+  }
+}
+
 function printTable(rows: Array<Record<string, unknown>>): void {
   if (rows.length === 0) {
     process.stdout.write('No results\n');
@@ -158,6 +180,11 @@ function outputSuccess(command: Command, payload: unknown): void {
 
   if (Array.isArray(payload) && payload.every((item) => isRecord(item))) {
     printTable(payload as Array<Record<string, unknown>>);
+    return;
+  }
+
+  if (isDoctorReport(payload)) {
+    printDoctorReport(payload);
     return;
   }
 
@@ -239,11 +266,19 @@ async function pathExists(path: string): Promise<boolean> {
   }
 }
 
-function checkCommandAvailability(command: string): { ok: boolean; output: string } {
+function checkCommandAvailability(command: string): { ok: boolean; output: string; errorCode?: string } {
   const result = spawnSync(command, ['--version'], {
     encoding: 'utf8',
     shell: false,
   });
+
+  if (result.error) {
+    return {
+      ok: false,
+      output: result.error.message,
+      errorCode: (result.error as NodeJS.ErrnoException).code,
+    };
+  }
 
   if (result.status === 0) {
     return {
@@ -256,6 +291,43 @@ function checkCommandAvailability(command: string): { ok: boolean; output: strin
     ok: false,
     output: (result.stderr || result.stdout || '').trim(),
   };
+}
+
+async function probePort(host: string, port: number, timeoutMs: number): Promise<ConnectivityProbeResult> {
+  return new Promise((resolve) => {
+    const socket = createConnection({ host, port });
+    let settled = false;
+
+    const finish = (result: ConnectivityProbeResult): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      clearTimeout(timer);
+      socket.destroy();
+      resolve(result);
+    };
+
+    const timer = setTimeout(() => {
+      finish({ ok: false, errorCode: 'ETIMEDOUT', output: `Timed out after ${timeoutMs}ms` });
+    }, timeoutMs);
+
+    socket.once('connect', () => finish({ ok: true }));
+    socket.once('error', (error: NodeJS.ErrnoException) => {
+      finish({ ok: false, errorCode: error.code, output: error.message });
+    });
+  });
+}
+
+function buildConnectivityMessage(name: 'runtime' | 'lsp' | 'dap', port: number): string {
+  switch (name) {
+    case 'runtime':
+      return `Runtime bridge is not reachable on port ${port}. Start the game/project with the runtime addon enabled, then retry.`;
+    case 'lsp':
+      return `Godot editor/LSP is not reachable on port ${port}. Open the project in the Godot editor before using script diagnostics or completion.`;
+    case 'dap':
+      return `Godot debug adapter is not reachable on port ${port}. Start a debug session in Godot or use gopeak-cli daemon start before debugger commands.`;
+  }
 }
 
 async function createDoctorReport(command: Command): Promise<DoctorReport> {
@@ -281,8 +353,13 @@ async function createDoctorReport(command: Command): Promise<DoctorReport> {
     status: godotCheck.ok ? 'pass' : 'warn',
     message: godotCheck.ok
       ? `Godot executable available: ${config.godotPath}`
-      : `Godot executable not found or not runnable: ${config.godotPath}`,
-    details: { configuredPath: config.godotPath, output: godotCheck.output },
+      : `Godot executable not found: ${config.godotPath}. Set ${CONFIG_ENV_KEYS.godotPath} to your Godot 4 executable.`,
+    details: {
+      configuredPath: config.godotPath,
+      output: godotCheck.output,
+      errorCode: godotCheck.errorCode,
+      suggestedCommands: [`export ${CONFIG_ENV_KEYS.godotPath}=/path/to/Godot_v4.x`],
+    },
   });
 
   if (config.projectPath) {
@@ -293,17 +370,57 @@ async function createDoctorReport(command: Command): Promise<DoctorReport> {
       status: projectFileExists ? 'pass' : 'warn',
       message: projectFileExists
         ? `Godot project detected: ${config.projectPath}`
-        : `Project path is missing or does not contain project.godot: ${config.projectPath}`,
-      details: { projectPath: config.projectPath },
+        : `Configured project path is not a Godot project: ${config.projectPath}. Expected project.godot at the project root.`,
+      details: {
+        projectPath: config.projectPath,
+        expectedFile: resolve(config.projectPath, 'project.godot'),
+        suggestedCommands: ['gopeak-cli doctor --project-path /path/to/project --format text'],
+      },
     });
   } else {
     checks.push({
       name: 'projectPath',
       status: 'warn',
-      message: `No project path configured. Set ${CONFIG_ENV_KEYS.projectPath} or pass --project-path.`,
-      details: { envKey: CONFIG_ENV_KEYS.projectPath },
+      message: `No project path configured. Run inside a Godot project, pass --project-path, or set ${CONFIG_ENV_KEYS.projectPath}.`,
+      details: {
+        envKey: CONFIG_ENV_KEYS.projectPath,
+        suggestedCommands: [
+          `export ${CONFIG_ENV_KEYS.projectPath}=/path/to/project`,
+          'gopeak-cli doctor --project-path /path/to/project --format text',
+        ],
+      },
     });
   }
+
+  const runtimeProbe = await probePort('127.0.0.1', config.runtimePort, Math.min(config.timeoutMs, 750));
+  checks.push({
+    name: 'runtimeConnectivity',
+    status: runtimeProbe.ok ? 'pass' : 'warn',
+    message: runtimeProbe.ok
+      ? `Runtime bridge reachable on port ${config.runtimePort}`
+      : buildConnectivityMessage('runtime', config.runtimePort),
+    details: { host: '127.0.0.1', port: config.runtimePort, errorCode: runtimeProbe.errorCode, output: runtimeProbe.output },
+  });
+
+  const lspProbe = await probePort('127.0.0.1', config.lspPort, Math.min(config.timeoutMs, 750));
+  checks.push({
+    name: 'lspConnectivity',
+    status: lspProbe.ok ? 'pass' : 'warn',
+    message: lspProbe.ok
+      ? `Godot LSP reachable on port ${config.lspPort}`
+      : buildConnectivityMessage('lsp', config.lspPort),
+    details: { host: '127.0.0.1', port: config.lspPort, errorCode: lspProbe.errorCode, output: lspProbe.output },
+  });
+
+  const dapProbe = await probePort('127.0.0.1', config.dapPort, Math.min(config.timeoutMs, 750));
+  checks.push({
+    name: 'dapConnectivity',
+    status: dapProbe.ok ? 'pass' : 'warn',
+    message: dapProbe.ok
+      ? `Godot DAP reachable on port ${config.dapPort}`
+      : buildConnectivityMessage('dap', config.dapPort),
+    details: { host: '127.0.0.1', port: config.dapPort, errorCode: dapProbe.errorCode, output: dapProbe.output },
+  });
 
   const codexSkillTarget = resolve(process.cwd(), '.codex/skills/gopeak-cli/SKILL.md');
   const claudeSkillTarget = resolve(process.cwd(), '.claude/skills/gopeak-cli/SKILL.md');

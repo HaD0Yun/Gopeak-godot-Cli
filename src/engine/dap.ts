@@ -171,10 +171,11 @@ class GodotDAPClient {
         clearTimeout(connectTimer);
         this.socket = null;
         reject(
-          new GodotFlowError('ENGINE_CONNECTION_FAILED', 'Failed to connect to Godot DAP server', {
+          new GodotFlowError('ENGINE_CONNECTION_FAILED', `Failed to connect to the Godot debug adapter at ${this.host}:${this.port}. Start a debug session in Godot or gopeak-cli daemon start, and ensure no other debugger is holding the port.`, {
             host: this.host,
             port: this.port,
             message: error.message,
+            suggestedCommands: ['gopeak-cli doctor --format text', 'gopeak-cli daemon start'],
           }),
         );
       });
@@ -575,6 +576,13 @@ export async function executeDAP(
   config: DAPConfig,
 ): Promise<ExecutionResult> {
   const startedAt = Date.now();
+  if (!config.projectPath) {
+    throw new GodotFlowError('INVALID_ARGS', 'DAP execution requires a Godot project path. Pass --project-path or set GODOT_FLOW_PROJECT_PATH.', {
+      fnName,
+      envKey: 'GODOT_FLOW_PROJECT_PATH',
+      suggestedCommands: ['gopeak-cli doctor --format text'],
+    });
+  }
   const client = new GodotDAPClient(config);
   const safeArgs: JsonRecord = isRecord(args) ? args : {};
 
@@ -667,9 +675,10 @@ export async function executeDAP(
       || message.includes('connect')
       || message.includes('DAP connection')
     ) {
-      throw new GodotFlowError('ENGINE_CONNECTION_FAILED', `DAP connection failed: ${message}`, {
+      throw new GodotFlowError('ENGINE_CONNECTION_FAILED', `DAP connection failed: ${message}. Start a Godot debug session or daemon and retry.`, {
         fnName,
         args: safeArgs,
+        suggestedCommands: ['gopeak-cli doctor --format text', 'gopeak-cli daemon start'],
       });
     }
 

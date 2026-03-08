@@ -20,7 +20,9 @@
     "prepare": "npm run build",
     "postinstall": "node -e \"try{require('child_process').execFileSync(process.execPath,['dist/cli.js','setup','--silent'],{stdio:'ignore'})}catch{}\"",
     "prepack": "npm run build",
-    "test": "node dist/daemon/request-loop.test.js"
+    "test": "npm run build && npm run test:compiled",
+    "test:compiled": "node --test dist/daemon/request-loop.test.js dist/cli.smoke.test.js dist/preflight.test.js",
+    "test:smoke": "npm run build && node --test dist/cli.smoke.test.js"
   },
   "keywords": [
     "godot",

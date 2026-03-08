@@ -59,8 +59,13 @@ export async function executeHeadless(
   config: HeadlessConfig,
 ): Promise<ExecutionResult> {
   if (!config.projectPath) {
-    throw new GodotFlowError('INVALID_ARGS', 'Headless execution requires projectPath', {
+    throw new GodotFlowError('INVALID_ARGS', 'Headless execution requires a Godot project path. Run from a Godot project folder, pass --project-path, or set GODOT_FLOW_PROJECT_PATH.', {
       fnName,
+      envKey: 'GODOT_FLOW_PROJECT_PATH',
+      suggestedCommands: [
+        'gopeak-cli doctor --format text',
+        'gopeak-cli exec <function> --project-path /path/to/project',
+      ],
     });
   }
 
@@ -122,8 +127,10 @@ export async function executeHeadless(
       finish(() => {
         if (error.code === 'ENOENT') {
           reject(
-            new GodotFlowError('GODOT_NOT_FOUND', `Godot executable not found at path: ${config.godotPath}`, {
+            new GodotFlowError('GODOT_NOT_FOUND', `Godot executable not found at path: ${config.godotPath}. Set GODOT_FLOW_GODOT_PATH to your Godot 4 executable and rerun gopeak-cli doctor.`, {
               godotPath: config.godotPath,
+              envKey: 'GODOT_FLOW_GODOT_PATH',
+              suggestedCommands: ['gopeak-cli doctor --format text'],
             }),
           );
           return;
