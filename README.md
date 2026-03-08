@@ -10,6 +10,7 @@
 
 **220 Godot functions through 4 MCP meta-tools. 342 tokens instead of 18,606.** ([measured](benchmark/evidence/benchmark-report.json))
 
+
 `godot-flow` is a 3-layer architecture that lets AI assistants discover and execute Godot engine capabilities without loading massive tool schemas into context. Born from [GoPeak (godot-mcp)](https://github.com/HaD0Yun/godot-mcp), it compresses 220 individually-registered MCP tools into 4 meta-tools — a **54× token reduction** (measured via actual JSON-RPC `tools/list` responses). Adding functions costs zero extra tokens.
 
 > **Successor to GoPeak**: 220 functions (110 more than GoPeak's 110), same Godot integration depth, radically smaller context footprint.
@@ -740,7 +741,9 @@ The DAP engine uses a background daemon for persistent debug sessions:
 
 ## Testing & Verification
 
-godot-flow에는 별도 테스트 프레임워크(jest, vitest 등)가 없습니다. 대신 **구조적 검증**과 **실행 기반 검증** 두 축으로 품질을 보장합니다.
+godot-flow에는 대형 테스트 프레임워크(jest, vitest 등)를 도입하지 않았습니다. 대신 Node 내장 테스트 러너, TypeScript strict 검증, 레지스트리 검증, 그리고 **가벼운 CLI smoke test**를 조합해 품질을 확인합니다.
+
+현재 CI는 실제 빌드 결과물(`dist/cli.js`)을 대상으로 최소한의 엔트리포인트 smoke 검증을 수행합니다. 예를 들어 `--help`, `--version`, 그리고 **실제 Godot 바이너리 대신 가짜 실행 파일을 사용한 안전한 headless 라우팅 1건**을 확인합니다. 즉, 설치/라우팅 회귀는 자동으로 잡지만, **실제 Godot 프로젝트와 함께하는 완전한 end-to-end 보증은 아직 별도 수동/통합 검증 범위**입니다.
 
 ### 빌드 & 타입 검증
 

@@ -31,3 +31,6 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: CLI smoke tests
+        run: npm run test:compiled
