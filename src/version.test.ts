@@ -22,6 +22,6 @@ test('createServer exposes package version in MCP server metadata', () => {
   const server = createServer();
   const serverInfo = Reflect.get(server.server as object, '_serverInfo') as { version: string; name: string };
 
-  assert.equal(serverInfo.name, 'godot-flow');
+  assert.equal(serverInfo.name, 'GopeakCLI');
   assert.equal(serverInfo.version, APP_VERSION);
 });

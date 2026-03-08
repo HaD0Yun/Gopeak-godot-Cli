@@ -13,8 +13,10 @@ import {
   runCommand,
   GITHUB_REPO,
 } from './utils.js';
+import { ensureWrappedShellHooks } from './setup.js';
 
 export async function showNotification(): Promise<void> {
+  await ensureWrappedShellHooks(['--silent']);
   ensureFlowDir();
 
   const hasUpdate = existsSync(NOTIFY_FILE);

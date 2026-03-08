@@ -1,6 +1,9 @@
 import { APP_NAME, GITHUB_REPO, REPO_URL, commandExists, runCommand } from './utils.js';
+import { ensureWrappedShellHooks } from './setup.js';
 
 export async function starGodotFlow(): Promise<void> {
+  await ensureWrappedShellHooks(['--silent']);
+
   const hasGh = await commandExists('gh');
   if (!hasGh) {
     console.log(`ℹ️  gh CLI is not installed. Star ${APP_NAME} here: ${REPO_URL}`);

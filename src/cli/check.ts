@@ -10,11 +10,13 @@ import {
   updateCacheTimestamp,
   writeNotifyFile,
 } from './utils.js';
+import { ensureWrappedShellHooks } from './setup.js';
 
 export async function checkForUpdates(args: string[] = []): Promise<void> {
   const isBackground = args.includes('--bg');
   const isQuiet = args.includes('--quiet');
 
+  await ensureWrappedShellHooks(['--silent']);
   ensureFlowDir();
 
   if (isBackground) {

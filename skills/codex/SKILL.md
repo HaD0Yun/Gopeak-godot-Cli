@@ -1,10 +1,10 @@
-# Godot Flow
+# GopeakCLI
 
 Godot game engine integration via 4 MCP tools. Discover, inspect, and execute 110+ Godot operations.
 
 ## Triggers
 
-godot, scene, node, script, game, GDScript, shader, tilemap, animation, export, 게임, 개발, godot-flow
+godot, scene, node, script, game, GDScript, shader, tilemap, animation, export, 게임, 개발, GopeakCLI
 
 ## MCP Tools
 
@@ -51,4 +51,4 @@ scene, node, resource, asset, runtime, lsp, dap, project, debug, core, misc
 
 ## CLI Alternative
 
-godot-flow listfunc, findfunc, viewfunc, exec commands also available.
+GopeakCLI listfunc, findfunc, viewfunc, exec commands also available.

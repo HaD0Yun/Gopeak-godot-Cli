@@ -25,7 +25,21 @@ test('generateHookBlock wraps newly detectable standard AI CLIs when explicitly 
   assert.match(hookBlock, /__gopeak_cli_precheck\(\)/);
   assert.match(hookBlock, /^cursor\(\) \{ __gopeak_cli_precheck; command cursor "\$@"; \}$/m);
   assert.match(hookBlock, /^omc\(\) \{ __gopeak_cli_precheck; command omc "\$@"; \}$/m);
-  assert.doesNotMatch(hookBlock, /__gopeak_cli_orig_omx/);
+  assert.match(hookBlock, /^  omx\(\) \{ __gopeak_cli_precheck; __gopeak_cli_orig_omx "\$@"; \}$/m);
+});
+
+
+test('generateHookBlock wraps the full supported AI CLI surface when enabled even if only one command was detected', () => {
+  const hookBlock = generateHookBlock('bash', ['codex'], { wrapAiClis: true });
+
+  assert.match(hookBlock, /^claude\(\) \{ __gopeak_cli_precheck; command claude "\$@"; \}$/m);
+  assert.match(hookBlock, /^claudecode\(\) \{ __gopeak_cli_precheck; command claudecode "\$@"; \}$/m);
+  assert.match(hookBlock, /^cursor\(\) \{ __gopeak_cli_precheck; command cursor "\$@"; \}$/m);
+  assert.match(hookBlock, /^gemini\(\) \{ __gopeak_cli_precheck; command gemini "\$@"; \}$/m);
+  assert.match(hookBlock, /^copilot\(\) \{ __gopeak_cli_precheck; command copilot "\$@"; \}$/m);
+  assert.match(hookBlock, /^omc\(\) \{ __gopeak_cli_precheck; command omc "\$@"; \}$/m);
+  assert.match(hookBlock, /^opencode\(\) \{ __gopeak_cli_precheck; command opencode "\$@"; \}$/m);
+  assert.match(hookBlock, /^  omx\(\) \{ __gopeak_cli_precheck; __gopeak_cli_orig_omx "\$@"; \}$/m);
 });
 
 test('generateHookBlock wraps detected AI CLIs only when explicitly enabled', () => {
@@ -43,6 +57,19 @@ test('generateHookBlock preserves zsh omx wrapper fallback logic when wrapping i
   assert.ok(hookBlock.includes('  eval "$(functions omx | sed "1s/^omx /__gopeak_cli_orig_omx /")"'));
   assert.match(hookBlock, /^else$/m);
   assert.match(hookBlock, /^  omx\(\) \{ __gopeak_cli_precheck; command omx "\$@"; \}$/m);
+});
+
+test('generateHookBlock upgrades a previously passive shell block to wrapped prechecks without manual rerun instructions', () => {
+  const passiveHookBlock = generateHookBlock('bash', ['codex', 'omx']);
+  const upgradedHookBlock = generateHookBlock('bash', ['codex', 'omx'], { wrapAiClis: true });
+
+  assert.match(passiveHookBlock, /passive by default/);
+  assert.match(passiveHookBlock, /setup --wrap-ai-clis/);
+  assert.doesNotMatch(upgradedHookBlock, /passive by default/);
+  assert.doesNotMatch(upgradedHookBlock, /setup --wrap-ai-clis/);
+  assert.match(upgradedHookBlock, /__gopeak_cli_precheck\(\)/);
+  assert.match(upgradedHookBlock, /^codex\(\) \{ __gopeak_cli_precheck; command codex "\$@"; \}$/m);
+  assert.match(upgradedHookBlock, /^  omx\(\) \{ __gopeak_cli_precheck; __gopeak_cli_orig_omx "\$@"; \}$/m);
 });
 
 test('removeHookBlock removes generated shell hook blocks cleanly', () => {

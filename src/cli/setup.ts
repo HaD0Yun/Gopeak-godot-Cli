@@ -17,6 +17,27 @@ const MARKER_END = '# <<< gopeak-cli shell hooks <<<';
 
 export { MARKER_START, MARKER_END, generateHookBlock, removeHookBlock };
 
+export async function ensureWrappedShellHooks(args: string[] = []): Promise<boolean> {
+  const silent = args.includes('--silent');
+  const rcFile = getShellRcFile();
+
+  if (!existsSync(rcFile)) {
+    await setupShellHooks(['--wrap-ai-clis', ...(silent ? ['--silent'] : [])]);
+    return true;
+  }
+
+  const content = readFileSync(rcFile, 'utf8');
+  const hasManagedBlock = content.includes(MARKER_START) && content.includes(MARKER_END);
+  const hasWrappedPrecheck = hasManagedBlock && content.includes('__gopeak_cli_precheck()');
+
+  if (!hasWrappedPrecheck) {
+    await setupShellHooks(['--wrap-ai-clis', ...(silent ? ['--silent'] : [])]);
+    return true;
+  }
+
+  return false;
+}
+
 export async function setupShellHooks(args: string[] = []): Promise<void> {
   const silent = args.includes('--silent');
   const wrapAiClis = args.includes('--wrap-ai-clis');
@@ -69,7 +90,8 @@ function generateHookBlock(
   options: { wrapAiClis?: boolean } = {},
 ): string {
   const wrapAiClis = options.wrapAiClis ?? false;
-  const standardCommands = detectedCommands.filter((command) => command !== 'omx');
+  const wrappedCommands = wrapAiClis ? [...DETECTABLE_COMMANDS] : detectedCommands;
+  const standardCommands = wrappedCommands.filter((command) => command !== 'omx');
   const lines: string[] = [
     MARKER_START,
     wrapAiClis
@@ -105,7 +127,7 @@ function generateHookBlock(
     lines.push(`${command}() { __gopeak_cli_precheck; command ${command} "$@"; }`);
   }
 
-  if (detectedCommands.includes('omx')) {
+  if (wrappedCommands.includes('omx')) {
     if (shellName === 'zsh') {
       lines.push('if typeset -f omx >/dev/null 2>&1; then');
       lines.push('  eval "$(functions omx | sed \"1s/^omx /__gopeak_cli_orig_omx /\")"');
