@@ -1,15 +1,15 @@
-import { GITHUB_REPO, REPO_URL, commandExists, runCommand } from './utils.js';
+import { APP_NAME, GITHUB_REPO, REPO_URL, commandExists, runCommand } from './utils.js';
 
 export async function starGodotFlow(): Promise<void> {
   const hasGh = await commandExists('gh');
   if (!hasGh) {
-    console.log(`ℹ️  gh CLI is not installed. Star here: ${REPO_URL}`);
+    console.log(`ℹ️  gh CLI is not installed. Star ${APP_NAME} here: ${REPO_URL}`);
     return;
   }
 
   const authStatus = await runCommand('gh auth status');
   if (authStatus.code !== 0) {
-    console.log(`ℹ️  gh is not authenticated. Star here: ${REPO_URL}`);
+    console.log(`ℹ️  gh is not authenticated. Star ${APP_NAME} here: ${REPO_URL}`);
     return;
   }
 
@@ -25,5 +25,5 @@ export async function starGodotFlow(): Promise<void> {
     return;
   }
 
-  console.log(`⚠️  Could not star automatically. Star here: ${REPO_URL}`);
+  console.log(`⚠️  Could not star automatically. Star ${APP_NAME} here: ${REPO_URL}`);
 }

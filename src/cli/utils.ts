@@ -8,12 +8,12 @@ import { fileURLToPath } from 'node:url';
 
 const execAsync = promisify(exec);
 
-const APP_NAME = 'godot-flow';
-const PACKAGE_NAME = 'godot-flow';
+const APP_NAME = 'gopeak-cli';
+const PACKAGE_NAME = 'gopeak-cli';
 const GITHUB_REPO = 'HaD0Yun/Gopeak-godot-Cli';
 const GITHUB_BRANCHES = ['dev', 'main'] as const;
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
-const FLOW_DIR = join(homedir(), '.godot-flow');
+const FLOW_DIR = join(homedir(), '.gopeak-cli');
 const LAST_CHECK_FILE = join(FLOW_DIR, 'last-check');
 const NOTIFY_FILE = join(FLOW_DIR, 'notify');
 const ONBOARDING_SHOWN_FILE = join(FLOW_DIR, 'onboarding-shown');
