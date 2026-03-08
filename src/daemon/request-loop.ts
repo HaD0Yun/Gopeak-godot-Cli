@@ -18,7 +18,7 @@ export type RequestLoopResponse =
   };
 
 function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function toErrorMessage(error: unknown): string {

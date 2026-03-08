@@ -2,9 +2,9 @@ import { exec } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { get as httpsGet } from 'node:https';
 import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
-import { fileURLToPath } from 'node:url';
+import { APP_VERSION } from '../version.js';
 
 const execAsync = promisify(exec);
 
@@ -50,15 +50,7 @@ export function ensureFlowDir(): void {
 }
 
 export function getLocalVersion(): string {
-  try {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-    const packagePath = join(__dirname, '..', '..', 'package.json');
-    const packageJson = JSON.parse(readFileSync(packagePath, 'utf8')) as { version?: string };
-    return typeof packageJson.version === 'string' ? packageJson.version : '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
+  return APP_VERSION;
 }
 
 function fetchJson(url: string): Promise<Record<string, unknown> | null> {

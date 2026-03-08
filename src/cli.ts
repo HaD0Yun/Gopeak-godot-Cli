@@ -18,6 +18,7 @@ import { setupShellHooks } from './cli/setup.js';
 import { starGodotFlow } from './cli/star.js';
 import { uninstallHooks } from './cli/uninstall.js';
 import { getLocalVersion } from './cli/utils.js';
+import { APP_VERSION } from './version.js';
 import { CONFIG_ENV_KEYS, loadConfig } from './config.js';
 import { GodotFlowError } from './errors.js';
 import type { ExecutionResult } from './types/engine.js';
@@ -444,7 +445,7 @@ const program = new Command();
 
 program
   .name('gopeak-cli')
-  .version('1.0.0')
+  .version(APP_VERSION)
   .description('CLI-first Godot automation for humans and AI agents')
   .option('--format <type>', 'Output format (json|text)', 'json')
   .option('--timeout <ms>', 'Timeout in ms')
